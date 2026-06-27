@@ -1,0 +1,192 @@
+Hello, everybody, and welcome back.
+
+And this video I'd like to kind of give you a brief overview over what kind of methods we have available
+
+for building mobile applications and how kind of flutter fits into this whole picture and what makes
+
+Flutter amazing and what other options we have for developing applications.
+
+Before we kind of dive further into learning more about Flutter.
+
+So in essence, when to give you a context of apps?
+
+And I know that as a flutter to now, Flutter actually supports the development of web and mobile apps.
+
+But then this course, what I'm going to be doing is I'm going to be trying to teach you the fundamentals
+
+of Flutter, and we're going to be working towards building both iOS and Android applications.
+
+And the knowledge that you'll kind of get through developing these applications will easily translate
+
+to whether you're going to be then moving onwards to developing Flutter for Web or Flutter for desktop.
+
+So with that said, let's kind of talk about what Flutter does in terms of mobile development and how
+
+it kind of stacks up in the whole picture.
+
+So in essence, we have three approaches when it comes to building mobile application in today's market.
+
+These are the three big ones.
+
+I don't know if I'm missing something, but those are called one developing native mobile applications
+
+to developing web applications such as progressive web apps that run on the phone in a way that it mimics
+
+the actions of a mobile app.
+
+And this kind of website, or a progressive web app, has the functionality that maybe traditional web
+
+applications don't have, such as having access to device level hardware such as the phone's camera
+
+sensors and things like that.
+
+And then finally, we have something called hybrid apps as well.
+
+And what hybrid apps do is that they kind of try to mix the native and the web together and they try
+
+to build a application.
+
+And usually the approach for this is that they try to build an application in a way where the application
+
+has a web browser running inside of which, which then renders the actual application.
+
+So that's why we call them and hybrid that word.
+
+It's an actual app that gets installed on the actual device, but the inside of the actual application
+
+there, there's a web view that's actually rendering the contents of the application.
+
+So now that we have an understanding of this, let's move on to the next slide where I'm going to be
+
+trying to kind of show you what are some of the advantages of each of these approaches?
+
+So the advantages of having native apps is one that we have quality applications.
+
+We have good UI designs because of the aspect ratios and everything like that.
+
+It has usually good ID support.
+
+The speed of such applications is much more performant as opposed to the ones that are built either
+
+hybrid or progressive web apps.
+
+They have good UI interactions that kind of mimic the feel and look of the actual environment in Iran.
+
+So they have a native look.
+
+They have good usability, and all of the new features that are released on a platform are usually available
+
+to the native application developers first, then their counterparts, such as web apps or hybrid apps.
+
+So moving onwards, then we have web apps now.
+
+Web apps are amazing because one they're easier to develop.
+
+Why?
+
+Because you don't have to learn a new framework many people might have understanding of web technologies
+
+already JavaScript as a language already their CIUSSS and HTML language already, and they can kind
+
+of combine that decrease their learning time and kind of build a prototype or a product that can be
+
+shipped to the market quickly.
+
+Second, they're easily customizable as well.
+
+They also have reduced development costs because a single code base can usually be used to run apps
+
+on both iOS, Android and the Web, as well as Windows Phones.
+
+They're easy installation web apps as we all know, or accessible almost anywhere when you have an internet
+
+connection and they have good maintenance as well.
+
+And that kind of ties into the whole aspect of there being one code base that's being sure to develop
+
+the application.
+
+And there be a pool of developers which are already comfortable having a certain set of skills, and
+
+they can just easily translate them into learning a new framework that can allow them to use the knowledge
+
+that they have already to build that now web apps instead.
+
+So now moving on from there, this next is hybrid apps.
+
+Now hybrid apps kind of improve the UI slash rex experience that kind of lacks in web apps.
+
+They also have the advantage of having reduced development costs because of the shared code base, ease
+
+of integration, offline support and simplified maintenance.
+
+And that's pretty much all of the advantages of hybrid apps that at least I can think of.
+
+So with that said, let's talk about what the needs of users are, and users in this case could be client
+
+and user developers, designers, everybody that's kind of involved in the app making slashed using
+
+process.
+
+So if I was the CEO of a company, let's just say I would one one to choose a framework that reduce
+
+the development time and costs to build an application to provided me an extremely stunning UI UX interface.
+
+It had good integration.
+
+It had offline support.
+
+Obviously, the framework was a quality framework and the performance of that application that we built
+
+using that framework was good.
+
+It was somewhat standing on the shoulders of some of the bigger technology companies out there.
+
+I didn't want to use a framework that was just by some random person or maybe an entity that I don't
+
+know much about.
+
+For example, Google has angular or flutter in this case as well.
+
+So using a framework like that would be to my advantage because one, there would be good community
+
+that surrounds that project.
+
+So I would be easily able to kind of interact and see what's going on in the atmosphere.
+
+And if I have any questions, I can actually get the appropriate answers.
+
+And then I would want something that will allow me to have advanced UI interactions, as well as dig
+
+deeper into the source code.
+
+And finally, what I'd like to do is that I'd like to ensure that the code that gets compiled for the
+
+application that I build is actually going to compile natively, and it's going to run natively on the
+
+actual hardware of the device instead of using some rappers to kind of like proxy the interactions that
+
+are happening between the device as well as the application.
+
+So now that we have an understanding of all of the techniques that are available to us to develop an
+
+app, what each of them offer to us and what each of their advantages are and what we as users, whether
+
+it be developers and clients or some designer or developer, what our expectations are.
+
+I think I'm going to end this with you here and now.
+
+In the next video, I'll introduce Flutter to you and we'll try to tackle each of these checkpoints
+
+and see what makes a flutter.
+
+So amazing.
+
+So with that said, I'm going to end this video here, and I'll see you guys in the next video where
+
+we'll begin the actual introduction to flutter part.
+
+So thanks again for watching.
+
+We'll see you guys in the next video.
+

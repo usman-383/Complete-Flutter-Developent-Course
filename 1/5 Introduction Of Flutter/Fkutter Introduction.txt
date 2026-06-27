@@ -1,0 +1,173 @@
+Hello, everybody, and welcome back to another video and this video, we are now going to be taking
+
+a formal introduction to Flutter, and I'm going to be telling you what Flutter is.
+
+Who is it for?
+
+What makes it amazing and all of the shenanigans like that?
+
+So with that said, let's get into it and let's kick the first ball into the goal, which is what is
+
+Flutter.
+
+So Flutter is Google's software development kit for crafting beautiful, fast user experiences for mobile,
+
+web and desktop applications from a single code base.
+
+Now that's one of the amazing features of Flutter Fit are a whole lot more that I'll cover in this video.
+
+Flutter works with existing code and is used by developers and organizations around the world, and
+
+it's free and open source.
+
+So that's another excellent feature about Flutter is that it's one free for you to use, and it's open
+
+source and everything that open source I love.
+
+Now moving onwards with that, I think that we can talk a bit about Flutter and what makes Flutter special.
+
+In my opinion and my opinion, what makes Flutter special is that it can help us create beautiful,
+
+fast, productive apps and an extensible environment using open development models such as object oriented
+
+programming and other things like that.
+
+And many applications have been developed on the app stores that you can see right now that have been
+
+developed by Flutter and and are excellent examples of good UI UX design and have garnered thousands
+
+or even millions of downloads.
+
+One of these could be something that's shown on the actual get up page for Flutter, which I'll come
+
+to in some of the later videos, and that app is called Flatley.
+
+So if you want to see an app that's built up by Flutter, you can definitely go and see the app or frankly,
+
+reflect.
+
+I believe that's how you say it, and it's available on both iOS and Android.
+
+With that said, I also believe that fur gives us fast results like it's very easy to prototype applications
+
+with Flutter, and it's easy to get a prototype up and running and make incremental updates on it.
+
+Third, and most important to me is that the development experience is very developer friendly.
+
+You can see the changes in your code instantly being reflected on the actual device that you're working
+
+on, and I'm going to come back to this later, but that's what I love about it as well.
+
+And then third and finally, the last thing that I think or the fourth last thing that I'm going to
+
+say is that it's very extensible and open.
+
+Flutter basically works with any development tool, but it has a whole host of plug ins available for
+
+both Visual Studio Court, which is the editor that I'll be using in this course, as well as intelligent
+
+Android Studio and Flutter, provides thousands of packages to speed up your development, regardless
+
+of whatever your platform is.
+
+So with that said, I think that now that we have an understanding of Flutter, what Flutter is.
+
+Let's talk about who is Flutter for.
+
+So I believe the flutter is for everybody who's involved in the development experience arm.
+
+It makes designers converge on a brand driven experience on both Android and iOS.
+
+It makes the life of a designer really easy because they have to create a consistent kind of design
+
+schema for the application, and that can be replicated on both Android and iOS, as well as desktop
+
+or web if you prefer easily.
+
+It's excellent for prototype boards and students.
+
+I believe that work in like hackathons and things like that because it allows you to build high fidelity
+
+apps in a fast way that deliver a good user experience and cut down the development time by half, at
+
+least half, I would say.
+
+And that developers, obviously people like you and I benefit from fantastic developer tools and easy
+
+to use language, which is dart and will come to dart in an later course as well.
+
+Dart is the language of choice for developing flutter applications, a rich set of widgets, and I'll
+
+come to widgets as well what those are.
+
+But essentially they are the building blocks of a flutter application and great IDE support.
+
+And we'll see how some of the world's top ideas actually implement flutter development in them, and
+
+you can use them to speed up your development experience.
+
+And that flutter frees up development time for us individuals so that we can use that valuable time
+
+on actually building meaningful things, such as features of delightful experience that are going to
+
+enhance the end user experience.
+
+And it's a win win win situation for everybody.
+
+So with that said, now let's move on to the next thing as to why Flutter is a big deal.
+
+So we talked about the things that happen in the world of native applications and hybrid apps and then
+
+web apps.
+
+Now let's talk about how Flutter is a big deal and what Flutter is.
+
+So to kick, kick it off, I'm going to tell you that Flutter is a framework that develops mobile application,
+
+but the core that is then shipped to a device is native code.
+
+So this framework falls in the category of native mobile development.
+
+You already know that it's going to have amazing speed and good quality on the actual device.
+
+But besides this, the first big thing is that.
+
+To reduce development costs that already came to single code base that you can share your code build
+
+the same app for different devices that capture a bigger target market and have less time actually maintaining
+
+your code.
+
+Second, an excellent UI UX experience.
+
+Flutter has amazing capabilities for animations and creating custom UI and UX experiences.
+
+Ease of integration offline support It's simplified maintenance.
+
+As I already told you, it's developed by Google and is open source.
+
+So not only is it developed by one of the best tech companies in the world, but it's also open source.
+
+So it has the love from the open source community and bug fixes are usually done faster.
+
+It's a single code base that allows us to develop both iOS, Android Web and desktop applications and
+
+do so in a way that they compile natively so that the actual code that runs on the device's native code
+
+for the device.
+
+And then finally, it has superb tooling, so it creates a good ecosystem for us developers.
+
+So with that said, I'm going to end this video here, and I'll now see you guys in the next video where
+
+we're going to be talking about one of the most fundamental building blocks of a flutter application,
+
+and those are widgets.
+
+So with that, thank you for watching.
+
+I'll catch you guys in the next video.
+
+Thanks again.
+
+

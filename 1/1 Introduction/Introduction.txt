@@ -1,0 +1,53 @@
+Hello, everybody, and welcome to my blotter course and this course, we are going to be taking an
+
+E to Z approach of learning flutter development.
+
+And our focus is going to be by the end of this course is to make you somebody who is comfortable developing
+
+flutter applications.
+
+So before I actually begin this module or this section of our course, I would like to briefly discuss
+
+what will be covering in this section.
+
+So this section I would like to call is going to be our introduction section.
+
+And what we're going to be focusing on are going to be things such as understanding how flutter as a
+
+framework fits in the picture in essence of the millions of other frameworks that we have for developing
+
+mobile applications will also discuss techniques that are present in today's technological world on
+
+developing applications and how flutter kind of fits into them.
+
+We'll see what are the unique selling points of Flutter.
+
+What makes Flutter so powerful?
+
+What makes Flutter such a groundbreaking and amazing framework that a lot of companies are now adopting?
+
+And then we'll also learn some of the design patterns associated with Flutter, such as the Material
+
+Design Convention of Google.
+
+And we'll also take a look at things such as how to set up flutter on different kind of environments,
+
+such as a windows development environment or impact development environment.
+
+And then at the end, we'll also take an overview of our courses, outline and kind of see what things
+
+we are going to be building in this course.
+
+So with that said, I think this was a good enough introduction to the first section of our course.
+
+I hope that you're going to enjoy this course as much as I have enjoyed making it.
+
+And with that, I'll see you guys in the next video where we'll try to kind of pinpoint what Flutter
+
+is and how it kind of fits into the big picture of the Brazilian social development framework that we
+
+have out there for building mobile applications and things like that.
+
+So with that, thank you for watching.
+
+I'll catch you guys in the next video.

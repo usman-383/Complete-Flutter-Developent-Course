@@ -1,0 +1,363 @@
+Hello, everybody, and welcome back.
+
+And this video, I am going to be giving you a overview over what we're going to be learning in this
+
+course and how our progress is going to be through this course as we go on the of actually learning
+
+this little framework.
+
+Keep in mind that the majority of the stuff that's going to be covered in the course I'm going to be
+
+showing in this course.
+
+Overview But if I feel like that, there is something that has been asked by a lot of different students.
+
+I'll have an ending section in our courts where I have some extra floater content for anything that
+
+relates to student requests.
+
+So that thing is not going to be included in this course.
+
+Overview This course overview is just going to include stuff that I've prepared for, the course that
+
+is going to be basically taking you through everything that you need to do to be a seasoned flutter
+
+developer.
+
+So with that said, let's get into it and let's see what we're going to be learning.
+
+So first things first, the first introductory section in our course is going to be the introduction
+
+section, and this is the section in which you are currently right now watching this video as well.
+
+And this is the section where I'm going to be giving you an overview of Flutter, as well as an overview
+
+of the course.
+
+And we were just going to be talking about some of the important concepts related to a flutter fits
+
+into the picture.
+
+What are the mobile development techniques?
+
+Are there?
+
+How flutter kind of for the architecture of Flutter widget lifecycle, where you can find help, where
+
+you can find the relevant resources in your learning flutter and all of things like that?
+
+Once we're done with the introductory section and we're up to speed with all of the prerequisite knowledge
+
+that we need to know, we are going to be going towards the second section in our course, and that
+
+is going to be the setup section and this section.
+
+We're going to be taking a look at how we can set up the Flutter SDK on a Mac operating system on the
+
+Windows operating system.
+
+And as well as how we can set up our visual studio code environment and install the necessary plugins
+
+that are going to aid our development experience and allow us to build better flutter applications in
+
+a fluent manner.
+
+With this done, we will finally have all of the necessary prerequisites done for actually building
+
+flutter applications.
+
+And we're going to be taking our focus just a bit tired to the site before we delve completely into
+
+Flutter.
+
+And we're going to be taking a look at Dart, and we are going to have this section in, of course,
+
+where we're going to be basically taking a look at the Dart programming language and the fundamentals
+
+of it.
+
+We'll take a look at things such as strings, where variables, numbers, asynchronous operations,
+
+our futures.
+
+How do you work with lists?
+
+How do you work with maps?
+
+But keep in mind that this is not going to be a tall, dark course.
+
+It's just going to be a refresher section for you, which is going to basically give you all of the
+
+knowledge you need to know about Dart in a manner that allows you to basically get up to speed with
+
+flutter development and kind of understand what's going on.
+
+We'll take a look at things that such as object oriented programming as well functions, decision making
+
+loops, classes and objects, and a whole bunch of other stuff.
+
+And we'll look at one of the most important features that is null safety as well so that you guys don't
+
+feel left out when it comes to working with flutter applications that implement null safety or implementing
+
+null safety from scratch after Flutter 2.0.
+
+With this done, we would finally have everything ready to actually go and build our first flutter application.
+
+Our first letter application is going to be called the one.
+
+And in this section, we are going to be basically learning the very basics of the Flutter framework.
+
+We're going to be taking a look at the project structure, what a stateless widget is, how it would
+
+interact with each other, how we can basically make UI is using Flutter.
+
+What is the material widgets package, how we can use these, how we can style widgets, how we can
+
+import assets, how we can use images and very basic stuff like this to kind of get us into the groove
+
+of developing flutter applications that kind of give us that first hour project that we can actually
+
+be proud to show to people.
+
+And I tried to put an emphasis on trying to create a UI that's actually good and kind of mimics how
+
+you guys would be creating an actual war so that you guys have something that you're like, proud to
+
+show to other people and kind of feel like it's something that's reminiscent of actual real world applications.
+
+With this done, we are going to be moving towards the next part of our course, which is going to be
+
+developing a application known as task.
+
+And this application is going to be a very simple to do based application.
+
+And our focus is going to be towards building an application which can keep track of the To-Do tasks
+
+that we need to do doing is they will also take a look at how to manage state and flutter using stateful
+
+widgets.
+
+We are going to be looking at a package known as Hope, which is a NoSQL database that lives on the
+
+device and how we can persist data on it with data from it and.
+
+We're also going to be taking a look at how we can import external packages into Flutter, not to mention
+
+we'll take a look at some other useful material widgets such as list view, floating action buttons
+
+and things like that.
+
+And hopefully, by the end of this course, you'll actually have an application that looks good but
+
+also is fully functional as well.
+
+And I hope that you're going to enjoy building this application with passably.
+
+Then we're going to be moving toward something known as animations in Flutter.
+
+And I want it to include this in the middle of our course because I think animations are something that
+
+are sometimes left behind and some of the other courses that I thought that giving you knowledge about
+
+how you can work with animations of Flutter is going to be very good as well.
+
+So I decided to make an application where we're going to be taking a look at just how we can implement
+
+animations and flutter using a variety of different techniques.
+
+And that is going to be achieved by using the Adam Do app.
+
+And then I'm developers.
+
+It's going to be a very basic app which is going to allow us to basically experiment with animations
+
+and flow and see how they work.
+
+And this is going to be an optional section you can skip if you don't want to look into animations,
+
+you can come back to this if you'd like to do so.
+
+This is not going to hinder your progress through the course, and it doesn't build upon anything besides
+
+the sections that come before this.
+
+So with Adam, go down in the books, we're going to be moving towards our first asynchronous application,
+
+as well as an application that actually pulls data from the internet.
+
+And the application that we're going to be building is going to be coined cap and the coin cap application.
+
+We're going to be taking a look at how we can work with web requested flutter, how to interact with
+
+APIs, what futures are, what future builders are, how we can use asynchronous operations, how are
+
+you thinking of aid works, how we can import assets into our flutter application, how we can basically
+
+navigate between different pages in our Flutter application, as well as how we can basically create
+
+an application that has some future based or asynchronous based operations implemented in it.
+
+And how we can basically change the widget tree based upon what the state of a future is or what the
+
+state of our asynchronous function or asynchronous operation is.
+
+This application is going to utilize the CoinGecko API and through the API, which is totally free to
+
+use, will be able to pull data for a bunch of different cryptocurrencies and will also have actual
+
+page in this application, which is going to allow us to see the exchange rate for all different cryptocurrencies
+
+for a lot of different currencies.
+
+So with this done, I think this is going to be a very special kind of application to build because
+
+it's going to allow us to basically have an actual price blocker for cryptocurrencies.
+
+So with this done, we'll be able we'll be moving to another application in our course and this is going
+
+to be for a year.
+
+My goal to building this application was to actually teach you state management and flutter and how
+
+we can basically work with state management, how we can work with things known as change.
+
+Notify us how we can integrate web requests with the provider state management framework, how we can
+
+import custom fonts into a folder application, how we can basically link everything together in Flutter.
+
+We're also going to be taking it look at named road applications and a whole host of other features.
+
+And by the end of this course, you'll have a fully functioning, fully featured 2B application, which
+
+is going to allow you to basically select a certain amount of difficulty and have actual trivia questions
+
+pulled from the internet and then actually answer them as you please.
+
+And this is going to be a very cool application as well.
+
+But we're done.
+
+We are going to be moving on to our one of the biggest applications that we're going to be building
+
+in this course.
+
+And that is going to be for Instagram, for Instagram is going to allow us to basically work with Firebase
+
+using Flutter.
+
+We're going to be taking a look at how Firebase works in Flutter, what different modules does Firebase
+
+have and things like that.
+
+But before we actually move into actually implementing functionality into the fence program and what
+
+we're going to be doing is that we are going to be working towards building the UI for our Instagram
+
+app.
+
+We're going to be taking a look at how to work with forms.
+
+We're going to be taking a look at how to work with form fields.
+
+We're going to be taking a look at what a navigation park is, how we can access the device's stores
+
+to access images and things like that.
+
+And we're going to pull a fully featured log in and a description page for our application.
+
+And this is going to be one of the sections in our course.
+
+Once we're done with the section, we're actually going to be moving to the other section in our course,
+
+which is going to build upon the same Instagram application.
+
+But this time our focus is going to be towards implementing Firebase into our application.
+
+So we're going to be taking a look at how we can implement Firebase authentication, Firebase Storage,
+
+Cloudflare Store, as well as how we can integrate Firebase on iOS and Android.
+
+I'm also going to be giving you a basic overview of Firebase at back and as a service provided to us
+
+by Google.
+
+What different services it provides us, how we can work with it and things like that.
+
+And apart from this, will also take a look at how we can.
+
+And basically work with streams and stream builders, how well you can upload files to using Flutter
+
+tool, for example, cloud storage, and we're also going to be taking a look at how we can work with
+
+great views in Flutter.
+
+Moving on from Instagram, we are going to be developing the final application in our course and this
+
+application is going to be called IBM.
+
+It's going to be app, which is going to allow us after we give it a certain number of inputs to calculate
+
+the BMI for the respective user and what our focus in this course is going to be or in this section.
+
+I should say it's going to be to learn how we can work with Cupertino styled widgets in Flutter.
+
+So in all of the previous sections of our course, we were working with the material design scheme and
+
+we were working with material widgets from the material package.
+
+In this section, we're going to be taking a look at how we can work with Cupertino widgets in our application
+
+and how we can style applications in Flutter that kind of mimic the iOS design schema called Cupertino.
+
+We'll also take a look at your preferences, and I'll highly recommend that you kind of go along and
+
+actually build this application in this course.
+
+Why?
+
+Because this will actually bring us to the last and final section in our course, which is going to
+
+be flutter testing and debugging.
+
+We are going to be basically taking the IBM application that we built in the previous video, and we're
+
+going to be working with it to implement things such as unit testing in our flutter application, how
+
+we can mock things.
+
+We are going to be looking at integration testing.
+
+We're also going to be looking at widget taxing log analysis, as well as how we can use the widget
+
+inspector to aid our development experience.
+
+And with this, that will pretty much conclude all of the main portion of our course or all of the main
+
+things that you need to learn and of course, to be a fully adept and fully qualified floor developer.
+
+There might be some sections that I might add afterwards, but those are not guaranteed.
+
+Those would be upon students request if there's something very particular that the students want to
+
+know about.
+
+If I find some updates to specific sections that I want you to know about.
+
+But this is what the basic outline of our course is going to be.
+
+So with that, what I'll do is that I'll end this with you here and I'll see you guys in another video.
+
+As always, keep learning.
+
+Keep going.
+
+Stay happy.
+
+Stay healthy.
+
+And I'll catch you guys in the next video.
+
+God bless.
+
+Thank you.
