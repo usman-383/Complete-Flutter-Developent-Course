@@ -1,5 +1,6 @@
 /*Variable:
         Namespace in dart.
+        For storing particular values
 
 Example:
         int a = 10;
