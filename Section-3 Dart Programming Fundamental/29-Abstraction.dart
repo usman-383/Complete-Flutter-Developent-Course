@@ -25,10 +25,25 @@ class Female extends Human {
   }
 }
 
+//Example2
+abstract class Animal {
+  void makeSound(); // abstract method — no implementation here
+  void breathe() => print('Breathing');
+}
+
+class Dog extends Animal {
+  @override
+  void makeSound() => print('Bark');
+}
+
 void main() {
   Male obj1 = Male();
   obj1.Eyes();
 
   Female obj2 = Female();
   obj2.Eyes();
+
+  Animal pet = Dog(); // use the abstract type
+  pet.breathe(); // "Breathing"
+  pet.makeSound(); // "Bark"
 }
