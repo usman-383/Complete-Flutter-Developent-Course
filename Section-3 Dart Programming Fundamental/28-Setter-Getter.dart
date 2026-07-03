@@ -21,4 +21,8 @@ class Student {
   }
 }
 
-void main() {}
+void main() {
+  Student obj = Student();
+  obj.name = "Alice"; // Using setter to set the name
+  print(obj.name); // Using getter to get the name
+}
