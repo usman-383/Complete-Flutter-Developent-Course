@@ -1,7 +1,7 @@
 void main() {
   /*
   Sets: 
-      Store data in unorderd way. We store unique value in sets.
+      Store data in unordered way. We store unique value in sets.
   */
 
   //Example

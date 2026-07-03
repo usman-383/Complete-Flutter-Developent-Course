@@ -4,7 +4,7 @@ void main() {
           Set of objects 
   1)List : -> Store values in ordered way
       .)Static list: -> Values remain fixed
-      .)Dynamic list: -> Values can be changible
+      .)Dynamic list: -> Values can be change
   */
 
   //Example:
