@@ -7,7 +7,7 @@ use extends for inheritance
 annotate members with @protected from package:meta
 */
 
-import 'package:';
+import 'package:meta/meta.dart';
 
 class Parent {
   @protected
