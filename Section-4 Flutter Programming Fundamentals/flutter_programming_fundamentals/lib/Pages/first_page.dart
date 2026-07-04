@@ -17,7 +17,9 @@ class _FirstPageState extends State<FirstPage> {
 
   //this method update the new selected index
   void _navigateBottomBar(int index) {
-    _selectIndex = index;
+    setState(() {
+      _selectIndex = index;
+    });
   }
 
   final List _pages = [
