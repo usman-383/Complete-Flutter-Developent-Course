@@ -11,6 +11,8 @@ class _ToDoPageState extends State<ToDoPage> {
   //Text editing controller to get access what user typed
   TextEditingController myController = TextEditingController();
 
+  //greeting message variable
+
   //greet user method
   void greetUser() {
     print(myController.text);
@@ -20,18 +22,27 @@ class _ToDoPageState extends State<ToDoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            //TextField
-            TextField(
-              controller: myController,
-              decoration: InputDecoration(border: OutlineInputBorder()),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(25.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              //greeting message
+              Text(greetingMessage),
 
-            //Button
-            ElevatedButton(onPressed: greetUser, child: Text("Tap")),
-          ],
+              //TextField
+              TextField(
+                controller: myController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: "Type your name..",
+                ),
+              ),
+
+              //Button
+              ElevatedButton(onPressed: greetUser, child: Text("Tap")),
+            ],
+          ),
         ),
       ),
     );
