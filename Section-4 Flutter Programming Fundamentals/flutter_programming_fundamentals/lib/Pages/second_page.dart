@@ -1,3 +1,5 @@
+// ignore_for_file: sort_child_properties_last
+
 import 'package:flutter/material.dart';
 
 class SecondPage extends StatelessWidget {
@@ -5,6 +7,20 @@ class SecondPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(
+        title: Center(child: Text("Second Page")),
+        backgroundColor: Colors.blueAccent,
+      ),
+
+      body: Center(
+        child: Container(
+          child: Text("Hello"),
+          height: 200,
+          width: 200,
+          color: Colors.lightGreen,
+        ),
+      ),
+    );
   }
 }
