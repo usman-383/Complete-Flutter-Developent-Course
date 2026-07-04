@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 void main() {
   runApp(MyApp());
 
-  print(
-    "Hello, World!",
-  ); // Print statement to display a message in the console.
+  // print(
+  //   "Hello, World!",
+  // ); // Print statement to display a message in the console.
 }
 
 class MyApp extends StatelessWidget {
@@ -15,25 +15,56 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.deepPurpleAccent,
+        backgroundColor: Colors.deepPurple[200],
+
+        appBar: AppBar(
+          title: Center(child: Text("Flutter Basics")),
+          backgroundColor: Colors.deepPurple,
+          elevation: 4,
+          leading: IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () {
+              print('menu pressed');
+            },
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () {
+                print('search pressed');
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.notifications),
+              onPressed: () {
+                print('notifications pressed');
+              },
+            ),
+          ],
+        ),
+
         body: Center(
           child: Container(
             height: 300,
             width: 300,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.blueAccent,
               borderRadius: BorderRadius.circular(20),
             ),
-            color: Colors.blueAccent,
+
             child: Center(
-              child: Text(
-                "Hello, World!",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              child:
+                  // You can uncomment the following code to display text instead of an icon.
+                  // Text(
+                  //   "Hello, World!",
+                  //   style: TextStyle(
+                  //     fontSize: 24,
+                  //     fontWeight: FontWeight.bold,
+                  //     color: Colors.white,
+                  //   ),
+                  // ),
+                  //Icon widget to display a Flutter icon in the center of the container.
+                  Icon(Icons.flutter_dash, size: 100, color: Colors.white),
             ),
           ),
         ),
