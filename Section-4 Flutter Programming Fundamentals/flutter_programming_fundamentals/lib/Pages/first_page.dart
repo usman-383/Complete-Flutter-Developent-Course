@@ -11,21 +11,50 @@ class FirstPage extends StatelessWidget {
         title: Center(child: Text("1st Page")),
         backgroundColor: Colors.deepPurpleAccent,
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            //navigate to second page.
 
-            Navigator.pushNamed(context, '/SecondPage');
+      drawer: Drawer(
+        backgroundColor: Colors.deepPurple[100],
 
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => SecondPage()),
-            // );
-          },
-          child: Text("Go To Second Page"),
+        child: Column(
+          children: [
+            DrawerHeader(child: Icon(Icons.favorite, size: 50)),
+
+            //home page list tile
+            ListTile(
+              leading: Icon(Icons.home),
+              title: Text("Home"),
+              onTap: () {
+                //Gp to home page
+                Navigator.pushNamed(context, '/HomePage');
+              },
+            ),
+
+            //setting page list tile
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text("Setting"),
+              onTap: () {
+                Navigator.pushNamed(context, '/SettingPage');
+              },
+            ),
+          ],
         ),
       ),
+
+      // body:
+      // Center(
+      //   child: ElevatedButton(
+      //     onPressed: () {
+      //       //navigate to second page.
+      //       Navigator.pushNamed(context, '/SecondPage');
+      //       // Navigator.push(
+      //       //   context,
+      //       //   MaterialPageRoute(builder: (context) => SecondPage()),
+      //     // );
+      //     },
+      //     child: Text("Go To Second Page"),
+      //   ),
+      // ),
     );
   }
 }
