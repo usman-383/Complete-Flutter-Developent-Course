@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_programming_fundamentals/Pages/first_page.dart';
-import 'package:flutter_programming_fundamentals/Pages/second_page.dart';
+import 'package:flutter_programming_fundamentals/Pages/home_page.dart';
+import 'package:flutter_programming_fundamentals/Pages/setting_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -24,12 +25,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FirstPage(),
+      home: const FirstPage(),
 
       //When we have alote of pages to connect the use routes
       routes: {
-        // '/FirstPage':(context) =>FirstPage(),
-        '/SecondPage': (context) => SecondPage(),
+        '/FirstPage': (context) => FirstPage(),
+        // '/SecondPage': (context) => SecondPage(),
+        '/HomePage': (context) => HomePage(),
+        '/SettingPage': (context) => SettingPage(),
       },
 
       // Scaffold(

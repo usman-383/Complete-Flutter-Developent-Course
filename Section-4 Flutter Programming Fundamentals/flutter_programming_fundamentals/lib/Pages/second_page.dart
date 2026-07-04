@@ -1,5 +1,5 @@
 // ignore_for_file: sort_child_properties_last
-
+// import 'package:flutter_programming_fundamentals/Pages/first_page.dart';
 import 'package:flutter/material.dart';
 
 class SecondPage extends StatelessWidget {
@@ -15,7 +15,7 @@ class SecondPage extends StatelessWidget {
 
       body: Center(
         child: Container(
-          child: Text("Hello"),
+          child: Center(child: Text("Hello")),
           height: 200,
           width: 200,
           color: Colors.lightGreen,
