@@ -43,31 +43,68 @@ class MyApp extends StatelessWidget {
           ],
         ),
 
-        body: Center(
-          child: Container(
-            height: 300,
-            width: 300,
-            decoration: BoxDecoration(
-              color: Colors.blueAccent,
-              borderRadius: BorderRadius.circular(20),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+
+          // crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            //1st box
+            Expanded(
+              child: Container(
+                // height: 150,
+                //  width: 150,
+                color: Colors.deepPurple,
+              ),
             ),
 
-            child: Center(
-              child:
-                  // You can uncomment the following code to display text instead of an icon.
-                  // Text(
-                  //   "Hello, World!",
-                  //   style: TextStyle(
-                  //     fontSize: 24,
-                  //     fontWeight: FontWeight.bold,
-                  //     color: Colors.white,
-                  //   ),
-                  // ),
-                  //Icon widget to display a Flutter icon in the center of the container.
-                  Icon(Icons.flutter_dash, size: 100, color: Colors.white),
+            //2nd box
+            Expanded(
+              flex: 2,
+              child: Container(
+                //   height: 150,
+                //  width: 150,
+                color: Colors.deepPurple[400],
+              ),
             ),
-          ),
+
+            //3rd box
+            Expanded(
+              child: Container(
+                // height: 150,
+                // width: 150,
+                color: Colors.deepPurple[600],
+              ),
+            ),
+          ],
         ),
+
+        // Center(
+        //   child: Container(
+        //     height: 300,
+        //     width: 300,
+        //     decoration: BoxDecoration(
+        //       color: Colors.blueAccent,
+        //       borderRadius: BorderRadius.circular(20),
+        //     ),
+
+        //Text portion
+        //     child: Center(
+        //       child:
+        //           // You can uncomment the following code to display text instead of an icon.
+        //           // Text(
+        //           //   "Hello, World!",
+        //           //   style: TextStyle(
+        //           //     fontSize: 24,
+        //           //     fontWeight: FontWeight.bold,
+        //           //     color: Colors.white,
+        //           //   ),
+        //           // ),
+        //           //Icon widget to display a Flutter icon in the center of the container.
+        //Icon portion
+        //           Icon(Icons.flutter_dash, size: 100, color: Colors.white),
+        //     ),
+        //   ),
+        // ),
       ),
     );
   }
