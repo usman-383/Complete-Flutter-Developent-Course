@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_programming_fundamentals/Pages/first_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -22,143 +23,151 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: Colors.deepPurple[200],
+      home: FirstPage(),
 
-        appBar: AppBar(
-          title: Center(child: Text("Flutter Basics")),
-          backgroundColor: Colors.deepPurple,
-          elevation: 4,
-          leading: IconButton(
-            icon: Icon(Icons.menu),
-            onPressed: () {
-              print('menu pressed');
-            },
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.search),
-              onPressed: () {
-                print('search pressed');
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.notifications),
-              onPressed: () {
-                print('notifications pressed');
-              },
-            ),
-          ],
-        ),
+      // Scaffold(
+      //   backgroundColor: Colors.deepPurple[200],
 
-        body: GestureDetector(
-          onTap: userTapped,
-          child: Container(
-            height: 200,
-            width: 200,
-            color: Colors.deepPurple[200],
-            child: Center(child: Text("Tap me")),
-          ),
-        ),
+      //   appBar: AppBar(
+      //     title: Center(child: Text("Flutter Basics")),
+      //     backgroundColor: Colors.deepPurple,
+      //     elevation: 4,
+      //     leading: IconButton(
+      //       icon: Icon(Icons.menu),
+      //       onPressed: () {
+      //         print('menu pressed');
+      //       },
+      //     ),
+      //     actions: [
+      //       IconButton(
+      //         icon: Icon(Icons.search),
+      //         onPressed: () {
+      //           print('search pressed');
+      //         },
+      //       ),
+      //       IconButton(
+      //         icon: Icon(Icons.notifications),
+      //         onPressed: () {
+      //           print('notifications pressed');
+      //         },
+      //       ),
+      //     ],
+      //   ),
 
-        // Stack(
-        //   alignment: Alignment.bottomCenter,
-        //   children: [
-        //     //Big box
-        //     Container(height: 300, width: 300, color: Colors.blueAccent),
+      //   body:
 
-        //     //Middle box
-        //     Container(height: 200, width: 200, color: Colors.deepPurple),
+      //Widgets.
+      //  GestureDetector(
+      //   onTap: userTapped,
+      //   child: Container(
+      //     height: 200,
+      //     width: 200,
+      //     color: Colors.deepPurple[200],
+      //     child: Center(child: Text("Tap me")),
+      //   ),
+      // ),
 
-        //     //Small box
-        //     Container(height: 100, width: 100, color: Colors.green),
-        //   ],
-        // ),
+      // Stack(
+      //   alignment: Alignment.bottomCenter,
+      //   children: [
+      //     //Big box
+      //     Container(height: 300, width: 300, color: Colors.blueAccent),
 
-        //  GridView.builder(
-        //   itemCount: 64,
-        //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        //     crossAxisCount: 4,
-        //   ),
-        //   itemBuilder: (context, index) =>
-        //       Container(color: Colors.deepOrange, margin: EdgeInsets.all(2)),
-        // ),
+      //     //Middle box
+      //     Container(height: 200, width: 200, color: Colors.deepPurple),
 
-        //  ListView.builder(
-        //   itemCount: name.length,
-        //   itemBuilder: (context, index) => ListTile(title: Text(name[index])),
-        // ),
+      //     //Small box
+      //     Container(height: 100, width: 100, color: Colors.green),
+      //   ],
+      // ),
 
-        // Column
+      //  GridView.builder(
+      //   itemCount: 64,
+      //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      //     crossAxisCount: 4,
+      //   ),
+      //   itemBuilder: (context, index) =>
+      //       Container(color: Colors.deepOrange, margin: EdgeInsets.all(2)),
+      // ),
 
-        // ListView(
-        //   // scrollDirection: Axis.horizontal,
-        //   // mainAxisAlignment: MainAxisAlignment.center,
+      //  ListView.builder(
+      //   itemCount: name.length,
+      //   itemBuilder: (context, index) => ListTile(title: Text(name[index])),
+      // ),
 
-        //   // crossAxisAlignment: CrossAxisAlignment.start,
-        //   children: [
-        //     //1st box
-        //     Expanded(
-        //       child: Container(
-        //         height: 200,
-        //         //  width: 150,
-        //         color: Colors.deepPurple,
-        //       ),
-        //     ),
+      // Column
 
-        //     //2nd box
-        //     Expanded(
-        //       flex: 2,
-        //       child: Container(
-        //           height: 200,
-        //         //  width: 150,
-        //         color: Colors.deepPurple[400],
-        //       ),
-        //     ),
+      // ListView(
+      //   // scrollDirection: Axis.horizontal,
+      //   // mainAxisAlignment: MainAxisAlignment.center,
 
-        //     //3rd box
-        //     Expanded(
-        //       child: Container(
-        //         height: 200,
-        //         // width: 150,
-        //         color: Colors.deepPurple[600],
-        //       ),
-        //     ),
-        //   ],
-        // ),
+      //   // crossAxisAlignment: CrossAxisAlignment.start,
+      //   children: [
+      //     //1st box
+      //     Expanded(
+      //       child: Container(
+      //         height: 200,
+      //         //  width: 150,
+      //         color: Colors.deepPurple,
+      //       ),
+      //     ),
 
-        // Center(
-        //   child: Container(
-        //     height: 300,
-        //     width: 300,
-        //     decoration: BoxDecoration(
-        //       color: Colors.blueAccent,
-        //       borderRadius: BorderRadius.circular(20),
-        //     ),
+      //     //2nd box
+      //     Expanded(
+      //       flex: 2,
+      //       child: Container(
+      //           height: 200,
+      //         //  width: 150,
+      //         color: Colors.deepPurple[400],
+      //       ),
+      //     ),
 
-        //Text portion
-        //     child: Center(
-        //       child:
-        //           // You can uncomment the following code to display text instead of an icon.
-        //           // Text(
-        //           //   "Hello, World!",
-        //           //   style: TextStyle(
-        //           //     fontSize: 24,
-        //           //     fontWeight: FontWeight.bold,
-        //           //     color: Colors.white,
-        //           //   ),
-        //           // ),
-        //           //Icon widget to display a Flutter icon in the center of the container.
-        //Icon portion
-        //           Icon(Icons.flutter_dash, size: 100, color: Colors.white),
-        //     ),
-        //   ),
-        // ),
-      ),
+      //     //3rd box
+      //     Expanded(
+      //       child: Container(
+      //         height: 200,
+      //         // width: 150,
+      //         color: Colors.deepPurple[600],
+      //       ),
+      //     ),
+      //   ],
+      // ),
+
+      // Center(
+      //   child: Container(
+      //     height: 300,
+      //     width: 300,
+      //     decoration: BoxDecoration(
+      //       color: Colors.blueAccent,
+      //       borderRadius: BorderRadius.circular(20),
+      //     ),
+
+      //Text portion
+      //     child: Center(
+      //       child:
+      //           // You can uncomment the following code to display text instead of an icon.
+      //           // Text(
+      //           //   "Hello, World!",
+      //           //   style: TextStyle(
+      //           //     fontSize: 24,
+      //           //     fontWeight: FontWeight.bold,
+      //           //     color: Colors.white,
+      //           //   ),
+      //           // ),
+      //           //Icon widget to display a Flutter icon in the center of the container.
+      //Icon portion
+      //           Icon(Icons.flutter_dash, size: 100, color: Colors.white),
+      //     ),
+      //   ),
+      // ),
+      //widgets.
+      //   ),
     );
   }
 }
 
+
+//Fundamentals
   //Variables: Used for storing different data types and values in the application.
   // String name = "Usman dev";
   // int age = 20;
