@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_programming_fundamentals/Pages/first_page.dart';
+import 'package:flutter_programming_fundamentals/Pages/second_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -15,15 +16,21 @@ class MyApp extends StatelessWidget {
   // List name = ["Usman", "Khan", "Daniyal", "Zohaib", "Anyone"];
 
   //Function and methods.
-  void userTapped() {
-    print("User tapped!");
-  }
+  // void userTapped() {
+  //   print("User tapped!");
+  // }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: FirstPage(),
+
+      //When we have alote of pages to connect the use routes
+      routes: {
+        // '/FirstPage':(context) =>FirstPage(),
+        '/SecondPage': (context) => SecondPage(),
+      },
 
       // Scaffold(
       //   backgroundColor: Colors.deepPurple[200],
