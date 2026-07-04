@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const FirstPage(),
+      home: FirstPage(),
 
       //When we have alote of pages to connect the use routes
       routes: {
