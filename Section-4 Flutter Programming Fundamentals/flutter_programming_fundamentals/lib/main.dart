@@ -46,14 +46,27 @@ class MyApp extends StatelessWidget {
           ],
         ),
 
-        body: GridView.builder(
-          itemCount: 64,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-          ),
-          itemBuilder: (context, index) =>
-              Container(color: Colors.deepOrange, margin: EdgeInsets.all(2)),
+        body: Stack(
+          children: [
+            //Big box
+            Container(height: 300, width: 300, color: Colors.blueAccent),
+
+            //Middle box
+            Container(height: 200, width: 200, color: Colors.deepPurple),
+
+            //Small box
+            Container(height: 100, width: 100, color: Colors.amber),
+          ],
         ),
+
+        //  GridView.builder(
+        //   itemCount: 64,
+        //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        //     crossAxisCount: 4,
+        //   ),
+        //   itemBuilder: (context, index) =>
+        //       Container(color: Colors.deepOrange, margin: EdgeInsets.all(2)),
+        // ),
 
         //  ListView.builder(
         //   itemCount: name.length,
@@ -63,7 +76,6 @@ class MyApp extends StatelessWidget {
         // Column
 
         // ListView(
-
         //   // scrollDirection: Axis.horizontal,
         //   // mainAxisAlignment: MainAxisAlignment.center,
 
