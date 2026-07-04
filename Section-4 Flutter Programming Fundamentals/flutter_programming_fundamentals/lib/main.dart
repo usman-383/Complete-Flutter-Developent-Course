@@ -13,6 +13,11 @@ class MyApp extends StatelessWidget {
 
   // List name = ["Usman", "Khan", "Daniyal", "Zohaib", "Anyone"];
 
+  //Function and methods.
+  void userTapped() {
+    print("User tapped!");
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -46,18 +51,29 @@ class MyApp extends StatelessWidget {
           ],
         ),
 
-        body: Stack(
-          children: [
-            //Big box
-            Container(height: 300, width: 300, color: Colors.blueAccent),
-
-            //Middle box
-            Container(height: 200, width: 200, color: Colors.deepPurple),
-
-            //Small box
-            Container(height: 100, width: 100, color: Colors.amber),
-          ],
+        body: GestureDetector(
+          onTap: userTapped,
+          child: Container(
+            height: 200,
+            width: 200,
+            color: Colors.deepPurple[200],
+            child: Center(child: Text("Tap me")),
+          ),
         ),
+
+        // Stack(
+        //   alignment: Alignment.bottomCenter,
+        //   children: [
+        //     //Big box
+        //     Container(height: 300, width: 300, color: Colors.blueAccent),
+
+        //     //Middle box
+        //     Container(height: 200, width: 200, color: Colors.deepPurple),
+
+        //     //Small box
+        //     Container(height: 100, width: 100, color: Colors.green),
+        //   ],
+        // ),
 
         //  GridView.builder(
         //   itemCount: 64,
