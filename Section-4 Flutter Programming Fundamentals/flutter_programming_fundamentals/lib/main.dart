@@ -10,6 +10,9 @@ void main() {
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
+
+  // List name = ["Usman", "Khan", "Daniyal", "Zohaib", "Anyone"];
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -43,40 +46,58 @@ class MyApp extends StatelessWidget {
           ],
         ),
 
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-
-          // crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            //1st box
-            Expanded(
-              child: Container(
-                // height: 150,
-                //  width: 150,
-                color: Colors.deepPurple,
-              ),
-            ),
-
-            //2nd box
-            Expanded(
-              flex: 2,
-              child: Container(
-                //   height: 150,
-                //  width: 150,
-                color: Colors.deepPurple[400],
-              ),
-            ),
-
-            //3rd box
-            Expanded(
-              child: Container(
-                // height: 150,
-                // width: 150,
-                color: Colors.deepPurple[600],
-              ),
-            ),
-          ],
+        body: GridView.builder(
+          itemCount: 64,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+          ),
+          itemBuilder: (context, index) =>
+              Container(color: Colors.deepOrange, margin: EdgeInsets.all(2)),
         ),
+
+        //  ListView.builder(
+        //   itemCount: name.length,
+        //   itemBuilder: (context, index) => ListTile(title: Text(name[index])),
+        // ),
+
+        // Column
+
+        // ListView(
+
+        //   // scrollDirection: Axis.horizontal,
+        //   // mainAxisAlignment: MainAxisAlignment.center,
+
+        //   // crossAxisAlignment: CrossAxisAlignment.start,
+        //   children: [
+        //     //1st box
+        //     Expanded(
+        //       child: Container(
+        //         height: 200,
+        //         //  width: 150,
+        //         color: Colors.deepPurple,
+        //       ),
+        //     ),
+
+        //     //2nd box
+        //     Expanded(
+        //       flex: 2,
+        //       child: Container(
+        //           height: 200,
+        //         //  width: 150,
+        //         color: Colors.deepPurple[400],
+        //       ),
+        //     ),
+
+        //     //3rd box
+        //     Expanded(
+        //       child: Container(
+        //         height: 200,
+        //         // width: 150,
+        //         color: Colors.deepPurple[600],
+        //       ),
+        //     ),
+        //   ],
+        // ),
 
         // Center(
         //   child: Container(
