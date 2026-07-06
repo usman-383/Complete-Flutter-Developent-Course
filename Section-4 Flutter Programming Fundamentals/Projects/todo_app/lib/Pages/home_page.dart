@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/Utill/dialog_box.dart';
+import 'package:todo_app/Utill/my_button.dart';
 import '../Utill/todo_tile.dart';
 
 class HomePage extends StatefulWidget {
@@ -44,16 +45,19 @@ class _HomePageState extends State<HomePage> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.yellow[300],
         title: const Text('Delete task'),
         content: const Text('Are you sure you want to delete this task?'),
         actions: [
-          TextButton(
+          MyButton(
+            label: 'Cancel',
+            elevated: false,
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
           ),
-          TextButton(
+          const SizedBox(width: 8),
+          MyButton(
+            label: 'Delete',
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
           ),
         ],
       ),
