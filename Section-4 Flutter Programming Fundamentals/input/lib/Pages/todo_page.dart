@@ -12,10 +12,14 @@ class _ToDoPageState extends State<ToDoPage> {
   TextEditingController myController = TextEditingController();
 
   //greeting message variable
+  String greetingMessage = "";
 
   //greet user method
   void greetUser() {
-    print(myController.text);
+    String userName = myController.text;
+    setState(() {
+      greetingMessage = "Hello, ${userName}";
+    });
   }
 
   @override
