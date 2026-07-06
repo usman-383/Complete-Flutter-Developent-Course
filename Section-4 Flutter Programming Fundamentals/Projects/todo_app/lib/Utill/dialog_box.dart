@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:todo_app/Utill/my_button.dart';
 
 class DialogBox extends StatefulWidget {
   const DialogBox({super.key});
@@ -42,25 +43,18 @@ class _DialogBoxState extends State<DialogBox> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.yellow,
-                    foregroundColor: Colors.black,
-                  ),
+                MyButton(
+                  label: 'Cancel',
+                  elevated: false,
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.yellow,
-                    foregroundColor: Colors.black,
-                  ),
+                MyButton(
+                  label: 'Add',
                   onPressed: () {
                     final text = _controller.text.trim();
                     if (text.isNotEmpty) Navigator.of(context).pop(text);
                   },
-                  child: const Text('Add'),
                 ),
               ],
             ),
