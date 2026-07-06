@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/Utill/dialog_box.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:todo_app/data/dataBase.dart';
 import 'package:todo_app/Utill/my_button.dart';
 import '../Utill/todo_tile.dart';
 
@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       toDoList[index][1] = !toDoList[index][1];
     });
-    Hive.box('todos').put('todos', toDoList);
+    DataBase.saveTodos(toDoList);
   }
 
   //create a new task
@@ -39,7 +39,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         toDoList.add([newTask, false]);
       });
-      Hive.box('todos').put('todos', toDoList);
+      DataBase.saveTodos(toDoList);
     }
   }
 
@@ -70,7 +70,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         toDoList.removeAt(index);
       });
-      Hive.box('todos').put('todos', toDoList);
+      DataBase.saveTodos(toDoList);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Task deleted')));
@@ -80,13 +80,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final box = Hive.box('todos');
-    final stored = box.get('todos');
-    if (stored != null && stored is List) {
+    final stored = DataBase.getTodos();
+    if (stored.isNotEmpty) {
       toDoList = List.from(stored);
     } else {
       // save initial defaults
-      box.put('todos', toDoList);
+      DataBase.saveTodos(toDoList);
     }
   }
 
