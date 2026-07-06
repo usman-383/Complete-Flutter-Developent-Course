@@ -23,9 +23,9 @@ class MyButton extends StatelessWidget {
     final bg = backgroundColor ?? Colors.yellow;
     final fg = foregroundColor ?? Colors.black;
     final buttonStyle = ButtonStyle(
-      backgroundColor: MaterialStateProperty.all(bg),
-      foregroundColor: MaterialStateProperty.all(fg),
-      padding: MaterialStateProperty.all(
+      backgroundColor: WidgetStateProperty.all(bg),
+      foregroundColor: WidgetStateProperty.all(fg),
+      padding: WidgetStateProperty.all(
         padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     );
