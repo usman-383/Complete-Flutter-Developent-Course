@@ -42,7 +42,7 @@ class ToDoTile extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.delete),
-              color: Colors.redAccent,
+              color: Colors.black,
               onPressed: onDelete,
             ),
           ],
