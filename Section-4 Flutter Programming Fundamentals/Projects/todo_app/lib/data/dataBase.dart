@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class DataBase {
@@ -9,6 +10,12 @@ class DataBase {
     await Hive.initFlutter();
     await Hive.openBox(boxName);
   }
+
+  /// Return the underlying box instance.
+  static Box get box => Hive.box(boxName);
+
+  /// Return a listenable for the box so UI can auto-update.
+  static ValueListenable<Box> listenable() => Hive.box(boxName).listenable();
 
   /// Read todos list from the box. Returns empty list when none stored.
   static List getTodos() {

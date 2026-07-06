@@ -19,11 +19,17 @@ class _HomePageState extends State<HomePage> {
   ];
 
   //checkbox was tapped
-  void checkBoxChanged(bool? value, int index) {
+  Future<void> checkBoxChanged(bool? value, int index) async {
     setState(() {
       toDoList[index][1] = !toDoList[index][1];
     });
-    DataBase.saveTodos(toDoList);
+    try {
+      await DataBase.saveTodos(toDoList);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to save changes')));
+    }
   }
 
   //create a new task
@@ -39,7 +45,13 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         toDoList.add([newTask, false]);
       });
-      DataBase.saveTodos(toDoList);
+      try {
+        await DataBase.saveTodos(toDoList);
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to save task')));
+      }
     }
   }
 
@@ -70,10 +82,16 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         toDoList.removeAt(index);
       });
-      DataBase.saveTodos(toDoList);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Task deleted')));
+      try {
+        await DataBase.saveTodos(toDoList);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Task deleted')));
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to delete task')));
+      }
     }
   }
 
@@ -105,14 +123,23 @@ class _HomePageState extends State<HomePage> {
         child: Icon(Icons.add),
       ),
 
-      body: ListView.builder(
-        itemCount: toDoList.length,
-        itemBuilder: (context, index) {
-          return ToDoTile(
-            taskName: toDoList[index][0],
-            taskCompleted: toDoList[index][1],
-            onChanged: (value) => checkBoxChanged(value, index),
-            onDelete: () => deleteTask(index),
+      body: ValueListenableBuilder(
+        valueListenable: DataBase.listenable(),
+        builder: (context, box, _) {
+          final stored = box.get(DataBase.todosKey);
+          final list = (stored != null && stored is List)
+              ? List.from(stored)
+              : toDoList;
+          return ListView.builder(
+            itemCount: list.length,
+            itemBuilder: (context, index) {
+              return ToDoTile(
+                taskName: list[index][0],
+                taskCompleted: list[index][1],
+                onChanged: (value) => checkBoxChanged(value, index),
+                onDelete: () => deleteTask(index),
+              );
+            },
           );
         },
       ),
