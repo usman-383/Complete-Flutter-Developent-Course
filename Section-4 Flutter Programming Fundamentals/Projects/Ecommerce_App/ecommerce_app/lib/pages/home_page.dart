@@ -11,6 +11,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(bottomNavigationBar: const MyBottomNavBar());
+    return Scaffold(
+      backgroundColor: Colors.grey[300],
+      
+      bottomNavigationBar: const MyBottomNavBar());
   }
 }
