@@ -8,20 +8,65 @@ class IntroPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[300],
       body: Center(
-        child: Column(
-          children: [
-            //logo
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Image.asset('lib/images/nike_logo.png', height: 240),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25.0),
+          child: Column(
+            children: [
+              //logo
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('lib\images\logo.png', height: 240),
+              ),
 
-            //title
+              const SizedBox(height: 48),
 
-            //sub title
+              //title
+              const Text(
+                'Just Do It',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
 
-            //start now button
-          ],
+              const SizedBox(height: 24),
+
+              //sub title
+              const Text(
+                'Brand new sneakers and custom kicks made with premium quality',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 48),
+
+              //start now button
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(25),
+                  child: Center(
+                    child: const Text(
+                      'Shop Now',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
