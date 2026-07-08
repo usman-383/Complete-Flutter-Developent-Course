@@ -5,8 +5,16 @@ import '../models/shoe.dart';
 class CartItems extends StatelessWidget {
   final Shoe shoe;
   final VoidCallback? onRemove;
+  final VoidCallback? onIncrease;
+  final VoidCallback? onDecrease;
 
-  const CartItems({super.key, required this.shoe, this.onRemove});
+  const CartItems({
+    super.key,
+    required this.shoe,
+    this.onRemove,
+    this.onIncrease,
+    this.onDecrease,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +36,21 @@ class CartItems extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              icon: const Icon(Icons.remove, size: 18),
+              onPressed: onDecrease,
+            ),
             Text(
-              '\$${shoe.price}',
+              '${shoe.quantity}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add, size: 18),
+              onPressed: onIncrease,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '\$${int.parse(shoe.price) * shoe.quantity}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),

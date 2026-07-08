@@ -50,6 +50,12 @@ class _CartPageState extends State<CartPage> {
                     final shoe = cartItems[index];
                     return CartItems(
                       shoe: shoe,
+                      onIncrease: () {
+                        widget.cart.increaseQuantity(shoe);
+                      },
+                      onDecrease: () {
+                        widget.cart.decreaseQuantity(shoe);
+                      },
                       onRemove: () {
                         widget.cart.removeFromCart(shoe);
                       },
