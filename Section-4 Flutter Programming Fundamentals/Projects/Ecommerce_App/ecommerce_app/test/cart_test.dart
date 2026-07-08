@@ -26,5 +26,15 @@ void main() {
       expect(results, hasLength(1));
       expect(results.first.name, 'Air Jordan');
     });
+
+    test('checkoutSummary returns a purchase summary', () {
+      final cart = Cart();
+      cart.addToCart(cart.shoeShop.first);
+
+      final summary = cart.checkoutSummary();
+
+      expect(summary, contains('Order ready'));
+      expect(summary, contains('1'));
+    });
   });
 }
