@@ -13,6 +13,14 @@ class ShopPage extends StatefulWidget {
 }
 
 class _ShopPageState extends State<ShopPage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -28,11 +36,24 @@ class _ShopPageState extends State<ShopPage> {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Row(
                   children: [
-                    Text('Search', style: TextStyle(color: Colors.grey)),
-                    Icon(Icons.search, color: Colors.grey),
+                    const Icon(Icons.search, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          widget.cart.updateSearchQuery(value);
+                          setState(() {});
+                        },
+                        decoration: const InputDecoration(
+                          hintText: 'Search shoes',
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -123,10 +144,10 @@ class _ShopPageState extends State<ShopPage> {
               SizedBox(
                 height: 300,
                 child: ListView.builder(
-                  itemCount: widget.cart.shoeShop.length,
+                  itemCount: widget.cart.visibleShoes.length,
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) {
-                    final shoe = widget.cart.shoeShop[index];
+                    final shoe = widget.cart.visibleShoes[index];
                     return shoeTile(
                       shoe: shoe,
                       isFavorite: widget.cart.isFavorite(shoe),
