@@ -36,5 +36,15 @@ void main() {
       expect(summary, contains('Order ready'));
       expect(summary, contains('1'));
     });
+
+    test('applyCoupon reduces the total for a valid code', () {
+      final cart = Cart();
+      cart.addToCart(cart.shoeShop.first);
+
+      final discountedTotal = cart.applyCoupon('SAVE10');
+
+      expect(discountedTotal, 212);
+      expect(cart.appliedCoupon, 'SAVE10');
+    });
   });
 }

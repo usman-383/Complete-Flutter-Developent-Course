@@ -12,6 +12,14 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  final TextEditingController _couponController = TextEditingController();
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartItems = widget.cart.cart;
@@ -56,6 +64,30 @@ class _CartPageState extends State<CartPage> {
                     Text(
                       widget.cart.checkoutSummary(),
                       style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _couponController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter coupon code',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          widget.cart.applyCoupon(_couponController.text);
+                        });
+                      },
+                      child: const Text('Apply Coupon'),
                     ),
                     const SizedBox(height: 8),
                     Row(

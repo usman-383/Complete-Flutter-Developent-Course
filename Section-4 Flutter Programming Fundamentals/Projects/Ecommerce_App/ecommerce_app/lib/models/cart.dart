@@ -34,12 +34,15 @@ class Cart extends ChangeNotifier {
   final List<Shoe> _cartItems = [];
   final List<Shoe> _favorites = [];
   String _searchQuery = '';
+  String _appliedCoupon = '';
 
   List<Shoe> get shoeShop => _shoeShop;
 
   List<Shoe> get cart => _cartItems;
 
   List<Shoe> get favorites => _favorites;
+
+  String get appliedCoupon => _appliedCoupon;
 
   int get totalPrice {
     return _cartItems.fold(0, (sum, shoe) {
@@ -159,6 +162,18 @@ class Cart extends ChangeNotifier {
       0,
       (sum, shoe) => sum + shoe.quantity,
     );
-    return 'Order ready: $itemCount item(s) • Total: \$${totalPrice}';
+    final discountedTotal = applyCoupon(_appliedCoupon);
+    return 'Order ready: $itemCount item(s) • Total: \$${discountedTotal}';
+  }
+
+  int applyCoupon(String code) {
+    final normalizedCode = code.trim().toUpperCase();
+    if (normalizedCode == 'SAVE10' && totalPrice >= 100) {
+      _appliedCoupon = normalizedCode;
+      return totalPrice - 10;
+    }
+
+    _appliedCoupon = '';
+    return totalPrice;
   }
 }
