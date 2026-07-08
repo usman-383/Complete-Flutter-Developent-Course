@@ -71,6 +71,55 @@ class _ShopPageState extends State<ShopPage> {
 
               const SizedBox(height: 10),
 
+              if (widget.cart.favorites.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Your Favorites',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${widget.cart.favorites.length} items',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 70,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    itemCount: widget.cart.favorites.length,
+                    itemBuilder: (context, index) {
+                      final favorite = widget.cart.favorites[index];
+                      return Container(
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text(
+                            favorite.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               SizedBox(
                 height: 300,
                 child: ListView.builder(
@@ -80,12 +129,18 @@ class _ShopPageState extends State<ShopPage> {
                     final shoe = widget.cart.shoeShop[index];
                     return shoeTile(
                       shoe: shoe,
+                      isFavorite: widget.cart.isFavorite(shoe),
                       onAddToCart: () {
                         widget.cart.addToCart(shoe);
                         setState(() {});
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('${shoe.name} added to cart')),
                         );
+                      },
+                      onToggleFavorite: () {
+                        setState(() {
+                          widget.cart.toggleFavorite(shoe);
+                        });
                       },
                     );
                   },

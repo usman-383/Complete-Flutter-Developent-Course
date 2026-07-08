@@ -5,8 +5,16 @@ import '../models/shoe.dart';
 class shoeTile extends StatelessWidget {
   final Shoe shoe;
   final VoidCallback? onAddToCart;
+  final VoidCallback? onToggleFavorite;
+  final bool isFavorite;
 
-  const shoeTile({super.key, required this.shoe, this.onAddToCart});
+  const shoeTile({
+    super.key,
+    required this.shoe,
+    this.onAddToCart,
+    this.onToggleFavorite,
+    this.isFavorite = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +28,33 @@ class shoeTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              shoe.imagePath,
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  shoe.imagePath,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: onToggleFavorite,
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : Colors.white,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+            ],
           ),
 
           Padding(
