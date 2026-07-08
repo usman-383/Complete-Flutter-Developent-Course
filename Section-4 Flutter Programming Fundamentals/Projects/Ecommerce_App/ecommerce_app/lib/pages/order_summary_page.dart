@@ -1,5 +1,6 @@
 import 'package:ecommerce_app/models/cart.dart';
 import 'package:flutter/material.dart';
+import 'checkout_form_page.dart';
 
 class OrderSummaryPage extends StatelessWidget {
   final Cart cart;
@@ -124,16 +125,11 @@ class OrderSummaryPage extends StatelessWidget {
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: () {
-                                        final messenger =
-                                            ScaffoldMessenger.of(context);
-
-                                        cart.clearCart();
-                                        Navigator.pop(context);
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Order confirmed successfully',
-                                            ),
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                CheckoutFormPage(cart: cart),
                                           ),
                                         );
                                       },
