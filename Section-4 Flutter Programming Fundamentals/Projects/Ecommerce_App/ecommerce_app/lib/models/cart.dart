@@ -178,7 +178,7 @@ class Cart extends ChangeNotifier {
       (sum, shoe) => sum + shoe.quantity,
     );
     final discountedTotal = applyCoupon(_appliedCoupon);
-    return 'Order ready: $itemCount item(s) • Total: \$${discountedTotal}';
+    return 'Order ready: $itemCount item(s) • Total: \$$discountedTotal';
   }
 
   int applyCoupon(String code) {

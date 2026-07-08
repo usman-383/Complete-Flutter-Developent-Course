@@ -85,9 +85,27 @@ class _CartPageState extends State<CartPage> {
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () {
-                        setState(() {
-                          widget.cart.applyCoupon(_couponController.text);
-                        });
+                        final code = _couponController.text;
+                        final discounted = widget.cart.applyCoupon(code);
+                        setState(() {});
+
+                        if (widget.cart.appliedCoupon.isNotEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Coupon applied: ${widget.cart.appliedCoupon} — new total \$$discounted',
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Invalid coupon or conditions not met',
+                              ),
+                            ),
+                          );
+                        }
                       },
                       child: const Text('Apply Coupon'),
                     ),
