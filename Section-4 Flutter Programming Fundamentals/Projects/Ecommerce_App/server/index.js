@@ -10,59 +10,54 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// SQLite DB in server/orders.db
+// DB
 const DB_PATH = path.join(__dirname, 'orders.db');
 const db = new sqlite3.Database(DB_PATH);
 
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS orders (
-        id TEXT PRIMARY KEY,
-        createdAt TEXT,
-        customer TEXT,
-        items TEXT,
-        total INTEGER,
-        coupon TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS email_logs (
-        id TEXT PRIMARY KEY,
-        order_id TEXT,
-        sentAt TEXT,
-        recipient TEXT,
-        subject TEXT,
-        success INTEGER,
-        info TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS email_retries (
-        id TEXT PRIMARY KEY,
-        order_id TEXT,
-        recipient TEXT,
-        subject TEXT,
-        text TEXT,
-        html TEXT,
-        attempts INTEGER DEFAULT 0,
-        nextAttemptAt INTEGER,
-        lastError TEXT,
-        createdAt INTEGER
-    )`);
-    // Try to add 'notified' column for admin alerts if it doesn't exist
-    db.run('ALTER TABLE email_retries ADD COLUMN notified INTEGER DEFAULT 0', (err) => {
-        // ignore error if column already exists
-        if (err) {
-            // console.log('notified column may already exist');
-        }
-    });
-});
+    id TEXT PRIMARY KEY,
+    createdAt TEXT,
+    customer TEXT,
+    items TEXT,
+    total INTEGER,
+    coupon TEXT
+  )`);
 
-// Settings table and in-memory cache
-db.run(`CREATE TABLE IF NOT EXISTS settings (
+    db.run(`CREATE TABLE IF NOT EXISTS email_logs (
+    id TEXT PRIMARY KEY,
+    order_id TEXT,
+    sentAt TEXT,
+    recipient TEXT,
+    subject TEXT,
+    success INTEGER,
+    info TEXT
+  )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS email_retries (
+    id TEXT PRIMARY KEY,
+    order_id TEXT,
+    recipient TEXT,
+    subject TEXT,
+    text TEXT,
+    html TEXT,
+    attempts INTEGER DEFAULT 0,
+    nextAttemptAt INTEGER,
+    lastError TEXT,
+    createdAt INTEGER,
+    notified INTEGER DEFAULT 0
+  )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
-)`);
+  )`);
+});
 
 const SETTINGS = {};
 function loadSettings() {
     db.all('SELECT key, value FROM settings', (err, rows) => {
-        if (err) return console.warn('Failed to load settings', err);
+        if (err) return;
         (rows || []).forEach(r => { SETTINGS[r.key] = r.value; });
     });
 }
@@ -79,262 +74,124 @@ function setSetting(key, value, cb) {
     stmt.run(key, String(value), (err) => { stmt.finalize(); if (cb) cb && cb(err); });
 }
 
-// Helper: create nodemailer transporter from env
 function createTransporter() {
     const smtpHost = process.env.SMTP_HOST || '';
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 0;
     const smtpUser = process.env.SMTP_USER || '';
     const smtpPass = process.env.SMTP_PASS || '';
     if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) return null;
-    return nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-    });
+    return nodemailer.createTransport({ host: smtpHost, port: smtpPort, secure: smtpPort === 465, auth: { user: smtpUser, pass: smtpPass } });
 }
 
-// Enqueue an email for retry (persistent)
 function enqueueEmailRetry(orderId, recipient, subject, text, html) {
     const id = `${Date.now().toString(36)}-retry`;
     const now = Date.now();
-    const next = now + 60 * 1000; // first retry after 1 minute
-    const stmt = db.prepare(
-        'INSERT INTO email_retries (id, order_id, recipient, subject, text, html, attempts, nextAttemptAt, lastError, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    );
-    stmt.run(id, orderId, recipient, subject, text, html, 0, next, '', now, (err) => {
-        if (err) console.error('Failed to enqueue email retry', err);
-        stmt.finalize();
-    });
+    const next = now + 60 * 1000;
+    const stmt = db.prepare('INSERT INTO email_retries (id, order_id, recipient, subject, text, html, attempts, nextAttemptAt, lastError, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, orderId, recipient, subject, text, html, 0, next, '', now, (err) => { if (err) console.error('enqueue error', err); stmt.finalize(); });
 }
 
-// Background worker: process due retries
-async function processEmailRetries() {
+function processEmailRetries() {
     const now = Date.now();
     db.all('SELECT * FROM email_retries WHERE nextAttemptAt <= ? ORDER BY nextAttemptAt ASC LIMIT 10', [now], (err, rows) => {
-        if (err) return console.error('Retry worker DB error', err);
+        if (err) return console.error('retry select err', err);
         if (!rows || rows.length === 0) return;
         const transporter = createTransporter();
-        if (!transporter) return console.warn('SMTP not configured; cannot process email retries');
+        if (!transporter) return console.warn('SMTP not configured — skipping retries');
 
-        rows.forEach((r) => {
-            const mailOptions = {
-                from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
-                to: r.recipient,
-                subject: r.subject,
-                text: r.text,
-                html: r.html,
-            };
-
+        rows.forEach(r => {
+            const mailOptions = { from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '', to: r.recipient, subject: r.subject, text: r.text, html: r.html };
             transporter.sendMail(mailOptions, (err, info) => {
-                const sentAt = new Date().toISOString();
                 const logId = `${Date.now().toString(36)}-log`;
                 if (!err) {
-                    // insert success log
                     const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                    insert.run(logId, r.order_id, sentAt, r.recipient, r.subject, 1, (info && info.response) ? info.response : 'sent');
+                    insert.run(logId, r.order_id, new Date().toISOString(), r.recipient, r.subject, 1, (info && info.response) ? info.response : 'sent');
                     insert.finalize();
-                    // remove retry
                     db.run('DELETE FROM email_retries WHERE id = ?', [r.id]);
-                    console.log('Retry email sent for', r.id);
+                    console.log('Retry sent', r.id);
                 } else {
                     const attempts = (r.attempts || 0) + 1;
-                    const backoff = Math.min(24 * 60 * 60 * 1000, Math.pow(2, attempts) * 60 * 1000); // exponential, cap 24h
+                    const backoff = Math.min(24 * 60 * 60 * 1000, Math.pow(2, attempts) * 60 * 1000);
                     const nextAttempt = Date.now() + backoff;
-                    const update = db.prepare('UPDATE email_retries SET attempts = ?, nextAttemptAt = ?, lastError = ? WHERE id = ?');
-                    update.run(attempts, nextAttempt, (err && err.message) ? err.message : String(err), r.id);
-                    update.finalize();
-
-                    const logIdFail = `${Date.now().toString(36)}-log`;
-                    const infoText = err && err.message ? err.message : String(err);
+                    const upd = db.prepare('UPDATE email_retries SET attempts = ?, nextAttemptAt = ?, lastError = ? WHERE id = ?');
+                    upd.run(attempts, nextAttempt, (err && err.message) ? err.message : String(err), r.id);
+                    upd.finalize();
                     const insertFail = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                    insertFail.run(logIdFail, r.order_id, new Date().toISOString(), r.recipient, r.subject, 0, infoText);
+                    insertFail.run(logId, r.order_id, new Date().toISOString(), r.recipient, r.subject, 0, (err && err.message) ? err.message : String(err));
                     insertFail.finalize();
-                    console.warn('Retry failed for', r.id, 'scheduling next attempt', new Date(nextAttempt).toISOString());
-
-                    // If attempts reached threshold, notify admin (once)
-                    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
-                    const alertsEnabled = (getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1') === '1';
-                    if (alertsEnabled && attempts >= threshold) {
-                        // mark notified if not already
-                        db.get('SELECT notified FROM email_retries WHERE id = ?', [r.id], (err2, row2) => {
-                            if (err2) return;
-                            if (!row2 || row2.notified) return;
-                            // send admin alert
-                            notifyAdminAlert(r, attempts, (notifyErr) => {
-                                if (!notifyErr) {
-                                    const upd = db.prepare('UPDATE email_retries SET notified = 1 WHERE id = ?');
-                                    upd.run(r.id);
-                                    upd.finalize();
-                                }
-                            });
-                        });
-                    }
                 }
             });
         });
     });
 }
 
-// start retry worker every minute
 setInterval(processEmailRetries, 60 * 1000);
 
+// Basic routes
 app.post('/orders', (req, res) => {
     const order = req.body;
-    if (!order || !order.customer || !order.items) {
-        return res.status(400).json({ error: 'Invalid order payload' });
-    }
-
+    if (!order || !order.customer || !order.items) return res.status(400).json({ error: 'Invalid order payload' });
     const id = Date.now().toString(36);
     const createdAt = new Date().toISOString();
-    const stmt = db.prepare(
-        'INSERT INTO orders (id, createdAt, customer, items, total, coupon) VALUES (?, ?, ?, ?, ?, ?)'
-    );
-
-    try {
-        stmt.run(
-            id,
-            createdAt,
-            JSON.stringify(order.customer),
-            JSON.stringify(order.items),
-            order.total || 0,
-            order.coupon || ''
-        );
+    const stmt = db.prepare('INSERT INTO orders (id, createdAt, customer, items, total, coupon) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, createdAt, JSON.stringify(order.customer), JSON.stringify(order.items), order.total || 0, order.coupon || '', (err) => {
         stmt.finalize();
-        // Attempt to send confirmation email if SMTP configured
+        if (err) return res.status(500).json({ error: 'DB error' });
+
+        // attempt to send confirmation email
         const smtpHost = process.env.SMTP_HOST || '';
         const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 0;
         const smtpUser = process.env.SMTP_USER || '';
         const smtpPass = process.env.SMTP_PASS || '';
         const sender = process.env.SENDER_EMAIL || smtpUser || '';
-
         if (smtpHost && smtpPort && smtpUser && smtpPass && order.customer && order.customer.email) {
-            const transporter = nodemailer.createTransport({
-                host: smtpHost,
-                port: smtpPort,
-                secure: smtpPort === 465, // true for 465, false for other ports
-                auth: {
-                    user: smtpUser,
-                    pass: smtpPass,
-                },
-            });
-
-            const itemsSummary = (order.items || [])
-                .map((it) => `${it.quantity} x ${it.name} (@${it.price})`)
-                .join('\n');
-
-            const htmlItems = (order.items || [])
-                .map((it) => `<li>${it.quantity} x ${it.name} (@$${it.price})</li>`)
-                .join('');
-
-            const mailOptions = {
-                from: sender,
-                to: order.customer.email,
-                subject: `Order Confirmation — ${id}`,
-                text: `Thank you for your order!\n\nOrder id: ${id}\n\nItems:\n${itemsSummary}\n\nTotal: $${order.total}\n\nWe will process and ship your order soon.`,
-                html: `
-                    <div style="font-family: Arial, Helvetica, sans-serif; color: #222;">
-                        <h2 style="color:#333;">Thank you for your order!</h2>
-                        <p>Order id: <strong>${id}</strong></p>
-                        <h4>Items</h4>
-                        <ul style="line-height:1.6;">${htmlItems}</ul>
-                        <p><strong>Total: $${order.total}</strong></p>
-                        <hr />
-                        <p style="font-size:0.9em; color:#666;">We will process and ship your order soon.</p>
-                    </div>
-                `,
-            };
-
+            const transporter = nodemailer.createTransport({ host: smtpHost, port: smtpPort, secure: smtpPort === 465, auth: { user: smtpUser, pass: smtpPass } });
+            const itemsSummary = (order.items || []).map(it => `${it.quantity} x ${it.name} (@${it.price})`).join('\n');
+            const htmlItems = (order.items || []).map(it => `<li>${it.quantity} x ${it.name} (@$${it.price})</li>`).join('');
+            const mailOptions = { from: sender, to: order.customer.email, subject: `Order Confirmation — ${id}`, text: `Thank you for your order!\n\nOrder id: ${id}\n\nItems:\n${itemsSummary}\n\nTotal: $${order.total}\n`, html: `<div><h2>Thank you for your order!</h2><p>Order id: <strong>${id}</strong></p><ul>${htmlItems}</ul><p><strong>Total: $${order.total}</strong></p></div>` };
             transporter.sendMail(mailOptions, (err, info) => {
                 const logId = `${Date.now().toString(36)}-log`;
-                const sentAt = new Date().toISOString();
-                const recipient = order.customer.email || '';
-                const subject = mailOptions.subject;
                 const success = err ? 0 : 1;
                 const infoText = err ? (err.message || String(err)) : (info && info.response ? info.response : 'sent');
-
-                // insert log into DB
-                try {
-                    const insert = db.prepare(
-                        'INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)'
-                    );
-                    insert.run(logId, id, sentAt, recipient, subject, success, infoText);
-                    insert.finalize();
-                } catch (e) {
-                    console.error('Failed to insert email log', e);
-                }
-
+                const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                insert.run(logId, id, new Date().toISOString(), order.customer.email || '', mailOptions.subject, success, infoText);
+                insert.finalize();
                 if (err) {
-                    console.error('Failed to send confirmation email', err);
-                    // enqueue persistent retry
-                    try {
-                        enqueueEmailRetry(id, recipient, subject, mailOptions.text, mailOptions.html);
-                    } catch (e) {
-                        console.error('Failed to enqueue retry', e);
-                    }
-                } else {
-                    console.log('Confirmation email sent:', info.response);
+                    enqueueEmailRetry(id, order.customer.email || '', mailOptions.subject, mailOptions.text, mailOptions.html);
                 }
             });
         }
-
         res.json({ id });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to save order' });
-    }
+    });
 });
 
-// Template endpoint to create a Stripe PaymentIntent
+// Stripe intent template
 app.post('/create-payment-intent', async (req, res) => {
-    const { amount, currency = 'usd' } = req.body;
-
-    // IMPORTANT: Add your STRIPE_SECRET_KEY to .env and do not commit it.
+    const { amount, currency = 'usd' } = req.body || {};
     const stripeSecret = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecret) {
-        return res.status(500).json({ error: 'Stripe secret key not configured on server' });
-    }
-
+    if (!stripeSecret) return res.status(500).json({ error: 'Stripe secret key not configured' });
     const Stripe = require('stripe');
     const stripe = new Stripe(stripeSecret);
-
     try {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.max(50, Math.round(amount * 100)),
-            currency,
-        });
-
+        const paymentIntent = await stripe.paymentIntents.create({ amount: Math.max(50, Math.round((amount || 0) * 100)), currency });
         res.json({ clientSecret: paymentIntent.client_secret });
     } catch (err) {
-        console.error(err);
+        console.error('stripe err', err);
         res.status(500).json({ error: 'Failed to create payment intent' });
     }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
-
-// --- Admin UI and APIs (basic auth protected) ---
+// Basic admin auth
 function adminAuth(req, res, next) {
     const auth = req.headers['authorization'];
     const adminUser = process.env.ADMIN_USER || '';
     const adminPass = process.env.ADMIN_PASS || '';
-
-    if (!adminUser || !adminPass) {
-        return res.status(403).send('Admin not configured');
-    }
-
-    if (!auth || !auth.startsWith('Basic ')) {
-        res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
-        return res.status(401).send('Authentication required');
-    }
-
-    const base64Credentials = auth.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-    const [user, pass] = credentials.split(':');
-
+    if (!adminUser || !adminPass) return res.status(403).send('Admin not configured');
+    if (!auth || !auth.startsWith('Basic ')) { res.setHeader('WWW-Authenticate', 'Basic realm="Admin"'); return res.status(401).send('Authentication required'); }
+    const base64 = auth.split(' ')[1];
+    const creds = Buffer.from(base64, 'base64').toString('ascii');
+    const [user, pass] = creds.split(':');
     if (user === adminUser && pass === adminPass) return next();
-
     res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
     return res.status(401).send('Invalid credentials');
 }
@@ -342,49 +199,16 @@ function adminAuth(req, res, next) {
 app.get('/admin/orders', adminAuth, (req, res) => {
     db.all('SELECT * FROM orders ORDER BY createdAt DESC LIMIT 200', (err, rows) => {
         if (err) return res.status(500).json({ error: 'DB error' });
-        const parsed = rows.map((r) => ({
-            id: r.id,
-            createdAt: r.createdAt,
-            customer: JSON.parse(r.customer || '{}'),
-            items: JSON.parse(r.items || '[]'),
-            total: r.total,
-            coupon: r.coupon,
-        }));
+        const parsed = rows.map(r => ({ id: r.id, createdAt: r.createdAt, customer: JSON.parse(r.customer || '{}'), items: JSON.parse(r.items || '[]'), total: r.total, coupon: r.coupon }));
         res.json(parsed);
     });
 });
 
-app.get('/admin/email_logs', adminAuth, (req, res) => {
-    db.all('SELECT * FROM email_logs ORDER BY sentAt DESC LIMIT 200', (err, rows) => {
-        if (err) return res.status(500).json({ error: 'DB error' });
-        res.json(rows);
-    });
-});
+app.get('/admin/email_logs', adminAuth, (req, res) => { db.all('SELECT * FROM email_logs ORDER BY sentAt DESC LIMIT 200', (err, rows) => { if (err) return res.status(500).json({ error: 'DB error' }); res.json(rows); }); });
+app.get('/admin/email_retries', adminAuth, (req, res) => { db.all('SELECT * FROM email_retries ORDER BY nextAttemptAt ASC LIMIT 200', (err, rows) => { if (err) return res.status(500).json({ error: 'DB error' }); res.json(rows); }); });
 
-app.get('/admin/email_retries', adminAuth, (req, res) => {
-    db.all('SELECT * FROM email_retries ORDER BY nextAttemptAt ASC LIMIT 200', (err, rows) => {
-        if (err) return res.status(500).json({ error: 'DB error' });
-        // convert timestamps
-        const parsed = (rows || []).map(r => ({
-            id: r.id,
-            order_id: r.order_id,
-            recipient: r.recipient,
-            subject: r.subject,
-            attempts: r.attempts,
-            nextAttemptAt: r.nextAttemptAt,
-            lastError: r.lastError,
-            createdAt: r.createdAt,
-        }));
-        res.json(parsed);
-    });
-});
-
-// Admin: get or update runtime settings
 app.get('/admin/settings', adminAuth, (req, res) => {
-    res.json({
-        ALERT_THRESHOLD: getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3',
-        ALERTS_ENABLED: getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1',
-    });
+    res.json({ ALERT_THRESHOLD: getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', ALERTS_ENABLED: getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1' });
 });
 
 app.post('/admin/settings', adminAuth, (req, res) => {
@@ -393,224 +217,27 @@ app.post('/admin/settings', adminAuth, (req, res) => {
     if (Object.prototype.hasOwnProperty.call(body, 'ALERT_THRESHOLD')) tasks.push(cb => setSetting('ALERT_THRESHOLD', String(body.ALERT_THRESHOLD), cb));
     if (Object.prototype.hasOwnProperty.call(body, 'ALERTS_ENABLED')) tasks.push(cb => setSetting('ALERTS_ENABLED', String(body.ALERTS_ENABLED), cb));
     if (tasks.length === 0) return res.json({ ok: true });
-    // run sequentially
-    let i = 0;
-    function runNext(err) {
-        if (err) return res.status(500).json({ error: 'Failed to save settings' });
-        if (i >= tasks.length) return res.json({ ok: true });
-        const t = tasks[i++];
-        t(runNext);
-    }
+    let i = 0; function runNext(err) { if (err) return res.status(500).json({ error: 'Failed to save settings' }); if (i >= tasks.length) return res.json({ ok: true }); const t = tasks[i++]; t(runNext); }
     runNext();
 });
 
-// Admin: trigger immediate retry for a given retry id
 app.post('/admin/retry/:id/retry', adminAuth, (req, res) => {
     const id = req.params.id;
     db.get('SELECT * FROM email_retries WHERE id = ?', [id], (err, row) => {
         if (err) return res.status(500).json({ error: 'DB error' });
         if (!row) return res.status(404).json({ error: 'Retry not found' });
-
-        const transporter = createTransporter();
-        if (!transporter) return res.status(500).json({ error: 'SMTP not configured' });
-
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
-            to: row.recipient,
-            subject: row.subject,
-            text: row.text,
-            html: row.html,
-        };
-
+        const transporter = createTransporter(); if (!transporter) return res.status(500).json({ error: 'SMTP not configured' });
+        const mailOptions = { from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '', to: row.recipient, subject: row.subject, text: row.text, html: row.html };
         transporter.sendMail(mailOptions, (err, info) => {
-            const sentAt = new Date().toISOString();
             const logId = `${Date.now().toString(36)}-log`;
-            if (!err) {
-                const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                insert.run(logId, row.order_id, sentAt, row.recipient, row.subject, 1, (info && info.response) ? info.response : 'sent');
-                insert.finalize();
-                db.run('DELETE FROM email_retries WHERE id = ?', [id]);
-                return res.json({ ok: true, sent: true });
-            } else {
-                const attempts = (row.attempts || 0) + 1;
-                const backoff = Math.min(24 * 60 * 60 * 1000, Math.pow(2, attempts) * 60 * 1000);
-                const nextAttempt = Date.now() + backoff;
-                const update = db.prepare('UPDATE email_retries SET attempts = ?, nextAttemptAt = ?, lastError = ? WHERE id = ?');
-                update.run(attempts, nextAttempt, (err && err.message) ? err.message : String(err), id);
-                update.finalize();
-
-                const infoText = err && err.message ? err.message : String(err);
-                const insertFail = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                insertFail.run(logId, row.order_id, new Date().toISOString(), row.recipient, row.subject, 0, infoText);
-                insertFail.finalize();
-                // notify admin if threshold reached (and alerts enabled)
-                const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
-                const alertsEnabled = (getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1') === '1';
-                if (alertsEnabled && attempts >= threshold) {
-                    db.get('SELECT notified FROM email_retries WHERE id = ?', [id], (err2, row2) => {
-                        if (!err2 && row2 && !row2.notified) {
-                            notifyAdminAlert(row, attempts, (notifyErr) => {
-                                if (!notifyErr) {
-                                    const upd = db.prepare('UPDATE email_retries SET notified = 1 WHERE id = ?');
-                                    upd.run(id);
-                                    upd.finalize();
-                                }
-                            });
-                        }
-                    });
-                }
-                return res.status(500).json({ ok: false, error: infoText });
-            }
+            if (!err) { const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)'); insert.run(logId, row.order_id, new Date().toISOString(), row.recipient, row.subject, 1, (info && info.response) ? info.response : 'sent'); insert.finalize(); db.run('DELETE FROM email_retries WHERE id = ?', [id]); return res.json({ ok: true, sent: true }); }
+            const attempts = (row.attempts || 0) + 1; const backoff = Math.min(24 * 60 * 60 * 1000, Math.pow(2, attempts) * 60 * 1000); const nextAttempt = Date.now() + backoff; const update = db.prepare('UPDATE email_retries SET attempts = ?, nextAttemptAt = ?, lastError = ? WHERE id = ?'); update.run(attempts, nextAttempt, (err && err.message) ? err.message : String(err), id); update.finalize(); const insertFail = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)'); insertFail.run(logId, row.order_id, new Date().toISOString(), row.recipient, row.subject, 0, (err && err.message) ? err.message : String(err)); insertFail.finalize(); return res.status(500).json({ ok: false, error: (err && err.message) ? err.message : String(err) });
         });
     });
 });
 
-// Send an admin alert about persistent email delivery failure
-function notifyAdminAlert(retryRow, attempts, cb) {
-    const adminEmail = process.env.ADMIN_EMAIL || '';
-    const transporter = createTransporter();
-    if (!adminEmail || !transporter) return cb && cb(new Error('admin email or SMTP not configured'));
+app.post('/admin/retry/:id/delete', adminAuth, (req, res) => { const id = req.params.id; db.run('DELETE FROM email_retries WHERE id = ?', [id], function (err) { if (err) return res.status(500).json({ error: 'DB error' }); return res.json({ ok: true, deleted: this.changes }); }); });
 
-    const subject = `Alert: email delivery failing for order ${retryRow.order_id || retryRow.id}`;
-    const text = `The order confirmation email to ${retryRow.recipient} has failed ${attempts} times.
-
-Retry id: ${retryRow.id}
-Order id: ${retryRow.order_id}
-Last error: ${retryRow.lastError}
-
-You can review and manage retries at ${process.env.SERVER_BASE_URL || 'http://localhost:3000'}/admin`;
-
-    const mailOptions = {
-        from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
-        to: adminEmail,
-        subject,
-        text,
-    };
-
-    transporter.sendMail(mailOptions, (err, info) => {
-        const logId = `${Date.now().toString(36)}-log`;
-        const sentAt = new Date().toISOString();
-        try {
-            const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-            insert.run(logId, retryRow.order_id || '', sentAt, adminEmail, subject, err ? 0 : 1, err ? (err.message || String(err)) : ((info && info.response) ? info.response : 'sent'));
-            insert.finalize();
-        } catch (e) {
-            console.error('Failed to log admin alert', e);
-        }
-        return cb && cb(err);
-    });
-}
-
-// Daily digest: send a summary of persistent failures (runs hourly and checks last-send)
-function sendDigestIfDue() {
-    const digestEnabled = (getSettingSync('DIGEST_ENABLED') || process.env.DIGEST_ENABLED || '1') === '1';
-    if (!digestEnabled) return;
-    const adminEmail = process.env.ADMIN_EMAIL || '';
-    const transporter = createTransporter();
-    if (!adminEmail || !transporter) return;
-
-    const lastDigest = parseInt(getSettingSync('LAST_DIGEST_AT') || '0', 10);
-    const now = Date.now();
-    // send at most once per 24h
-    if (lastDigest && (now - lastDigest) < (24 * 60 * 60 * 1000)) return;
-
-    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
-    db.all('SELECT * FROM email_retries WHERE attempts >= ? ORDER BY attempts DESC LIMIT 100', [threshold], (err, rows) => {
-        if (err) return console.error('Digest DB error', err);
-        if (!rows || rows.length === 0) return;
-
-        const lines = rows.map(r => `Order: ${r.order_id || ''} | To: ${r.recipient} | Attempts: ${r.attempts} | Last error: ${r.lastError || ''}`);
-        const text = `Daily digest of persistent email failures:\n\n${lines.join('\n\n')}`;
-        const html = `<div><h3>Persistent email failures</h3><ul>${rows.map(r => `<li>Order: ${r.order_id || ''} — To: ${r.recipient} — Attempts: ${r.attempts} — Last error: ${escHtml(r.lastError || '')}</li>`).join('')}</ul></div>`;
-
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
-            to: adminEmail,
-            subject: `Digest: ${rows.length} persistent email failures`,
-            text,
-            html,
-        };
-
-        transporter.sendMail(mailOptions, (err, info) => {
-            const logId = `${Date.now().toString(36)}-log`;
-            const sentAt = new Date().toISOString();
-            try {
-                const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                insert.run(logId, '', sentAt, adminEmail, mailOptions.subject, err ? 0 : 1, err ? (err.message || String(err)) : ((info && info.response) ? info.response : 'sent'));
-                insert.finalize();
-            } catch (e) { console.error('Failed to log digest', e); }
-
-            if (!err) {
-                setSetting('LAST_DIGEST_AT', String(Date.now()));
-            }
-        });
-    });
-}
-
-function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-// check digest once per hour
-setInterval(sendDigestIfDue, 60 * 60 * 1000);
-
-// Send digest immediately (admin-triggered)
-function sendDigestNow(cb) {
-    const adminEmail = process.env.ADMIN_EMAIL || '';
-    const transporter = createTransporter();
-    if (!adminEmail || !transporter) return cb && cb(new Error('admin email or SMTP not configured'));
-
-    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
-    db.all('SELECT * FROM email_retries WHERE attempts >= ? ORDER BY attempts DESC LIMIT 100', [threshold], (err, rows) => {
-        if (err) return cb && cb(err);
-        if (!rows || rows.length === 0) return cb && cb(null, { sent: 0 });
-
-        const lines = rows.map(r => `Order: ${r.order_id || ''} | To: ${r.recipient} | Attempts: ${r.attempts} | Last error: ${r.lastError || ''}`);
-        const text = `Digest of persistent email failures:\n\n${lines.join('\n\n')}`;
-        const html = `<div><h3>Persistent email failures</h3><ul>${rows.map(r => `<li>Order: ${r.order_id || ''} — To: ${r.recipient} — Attempts: ${r.attempts} — Last error: ${escHtml(r.lastError || '')}</li>`).join('')}</ul></div>`;
-
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
-            to: adminEmail,
-            subject: `Digest: ${rows.length} persistent email failures`,
-            text,
-            html,
-        };
-
-        transporter.sendMail(mailOptions, (err, info) => {
-            const logId = `${Date.now().toString(36)}-log`;
-            const sentAt = new Date().toISOString();
-            try {
-                const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                insert.run(logId, '', sentAt, adminEmail, mailOptions.subject, err ? 0 : 1, err ? (err.message || String(err)) : ((info && info.response) ? info.response : 'sent'));
-                insert.finalize();
-            } catch (e) { console.error('Failed to log digest', e); }
-
-            if (!err) {
-                setSetting('LAST_DIGEST_AT', String(Date.now()));
-                return cb && cb(null, { sent: rows.length });
-            }
-            return cb && cb(err);
-        });
-    });
-}
-
-// Admin endpoint to trigger digest now
-app.post('/admin/digest/send', adminAuth, (req, res) => {
-    sendDigestNow((err, info) => {
-        if (err) return res.status(500).json({ error: err.message || String(err) });
-        return res.json({ ok: true, info });
-    });
-});
-
-// Admin: delete a retry entry
-app.post('/admin/retry/:id/delete', adminAuth, (req, res) => {
-    const id = req.params.id;
-    db.run('DELETE FROM email_retries WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: 'DB error' });
-        return res.json({ ok: true, deleted: this.changes });
-    });
-});
-
-// Admin: retry all pending retries immediately (process all rows)
 app.post('/admin/retry/all', adminAuth, (req, res) => {
     db.all('SELECT * FROM email_retries ORDER BY nextAttemptAt ASC LIMIT 1000', (err, rows) => {
         if (err) return res.status(500).json({ error: 'DB error' });
@@ -619,21 +246,13 @@ app.post('/admin/retry/all', adminAuth, (req, res) => {
         if (!transporter) return res.status(500).json({ error: 'SMTP not configured' });
 
         let processed = 0;
-        rows.forEach((r) => {
-            const mailOptions = {
-                from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
-                to: r.recipient,
-                subject: r.subject,
-                text: r.text,
-                html: r.html,
-            };
-
+        rows.forEach(r => {
+            const mailOptions = { from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '', to: r.recipient, subject: r.subject, text: r.text, html: r.html };
             transporter.sendMail(mailOptions, (err, info) => {
-                const sentAt = new Date().toISOString();
                 const logId = `${Date.now().toString(36)}-log`;
                 if (!err) {
                     const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                    insert.run(logId, r.order_id, sentAt, r.recipient, r.subject, 1, (info && info.response) ? info.response : 'sent');
+                    insert.run(logId, r.order_id, new Date().toISOString(), r.recipient, r.subject, 1, (info && info.response) ? info.response : 'sent');
                     insert.finalize();
                     db.run('DELETE FROM email_retries WHERE id = ?', [r.id]);
                     processed++;
@@ -644,10 +263,8 @@ app.post('/admin/retry/all', adminAuth, (req, res) => {
                     const update = db.prepare('UPDATE email_retries SET attempts = ?, nextAttemptAt = ?, lastError = ? WHERE id = ?');
                     update.run(attempts, nextAttempt, (err && err.message) ? err.message : String(err), r.id);
                     update.finalize();
-
-                    const infoText = err && err.message ? err.message : String(err);
                     const insertFail = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                    insertFail.run(logId, r.order_id, new Date().toISOString(), r.recipient, r.subject, 0, infoText);
+                    insertFail.run(logId, r.order_id, new Date().toISOString(), r.recipient, r.subject, 0, (err && err.message) ? err.message : String(err));
                     insertFail.finalize();
                 }
             });
@@ -657,122 +274,39 @@ app.post('/admin/retry/all', adminAuth, (req, res) => {
     });
 });
 
+// Minimal safe admin page
 app.get('/admin', adminAuth, (req, res) => {
-    res.type('html').send(`
-        <!doctype html>
-        <html>
-        <head>
-            <meta charset="utf-8" />
-            <title>Admin — Orders</title>
-            <style>
-              body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f6f6f6}
-              table{width:100%;border-collapse:collapse;margin-bottom:20px}
-              th,td{padding:8px;border:1px solid #ddd;text-align:left}
-              th{background:#eee}
-              h1,h2{margin-top:0}
-            </style>
-        </head>
-        <body>
-                        <h1>Orders</h1>
-                        <div id="settingsPanel" style="margin-bottom:12px; background:#fff; padding:10px; border:1px solid #e6e6e6;">
-                            <strong>Alert Settings</strong>
-                            <label style="margin-left:12px"><input type="checkbox" id="alertsEnabled"> Enable admin alert emails</label>
-                            <label style="margin-left:12px">Threshold: <input type="number" id="alertThreshold" min="1" style="width:70px"></label>
-                            <button id="saveSettings" style="margin-left:12px">Save</button>
-                            <button id="sendDigestNow" style="margin-left:12px">Send Digest Now</button>
-                            <span id="settingsMsg" style="margin-left:12px;color:green"></span>
-                        </div>
-                        <div id="orders"></div>
-            <h2>Pending Email Retries</h2>
-            <button id="retryAll" style="margin-bottom:12px">Retry All</button>
-            <div id="retries"></div>
-            <h2>Email Logs</h2>
-            <div id="emails"></div>
-            <script>
-                function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-                async function load(){
-                    const [oR, rR, eR, sR] = await Promise.all([fetch('/admin/orders'), fetch('/admin/email_retries'), fetch('/admin/email_logs'), fetch('/admin/settings')]);
-                    const orders = await oR.json();
-                    const retries = await rR.json();
-                    const emails = await eR.json();
-                    const settings = await sR.json();
-
-                    // populate settings UI
-                    try {
-                        document.getElementById('alertsEnabled').checked = (settings.ALERTS_ENABLED === '1' || settings.ALERTS_ENABLED === 1 || settings.ALERTS_ENABLED === 'true');
-                        document.getElementById('alertThreshold').value = settings.ALERT_THRESHOLD || '3';
-                    } catch(e){}
-
-                    let oh = '<table><tr><th>id</th><th>createdAt</th><th>customer</th><th>items</th><th>total</th><th>coupon</th></tr>';
-                    orders.forEach(r=>{
-                        const customer = r.customer && (r.customer.name || r.customer.email) ? esc(r.customer.name||r.customer.email) : '';
-                        const items = (r.items||[]).map(i=>esc(i.name)+' x'+(i.quantity||0)).join('<br/>');
-                        oh += `< tr ><td>${esc(r.id)}</td><td>${esc(r.createdAt)}</td><td>${customer}</td><td>${items}</td><td>${esc(r.total)}</td><td>${esc(r.coupon||'')}</td></tr > `;
-                    });
-                    oh += '</table>';
-                    document.getElementById('orders').innerHTML = oh;
-
-                    let rh = '<table><tr><th>id</th><th>order</th><th>recipient</th><th>attempts</th><th>nextAttemptAt</th><th>lastError</th><th>actions</th></tr>';
-                    retries.forEach(rr=>{
-                        const nextAt = rr.nextAttemptAt ? new Date(rr.nextAttemptAt).toISOString() : '';
-                        rh += `< tr ><td>${esc(rr.id)}</td><td>${esc(rr.order_id)}</td><td>${esc(rr.recipient)}</td><td>${esc(rr.attempts)}</td><td>${esc(nextAt)}</td><td>${esc(rr.lastError)}</td><td><button data-id="${esc(rr.id)}" class="retry">Retry Now</button> <button data-id="${esc(rr.id)}" class="del">Delete</button></td></tr > `;
-                    });
-                    rh += '</table>';
-                    document.getElementById('retries').innerHTML = rh;
-
-                    let eh = '<table><tr><th>id</th><th>order</th><th>sentAt</th><th>recipient</th><th>subject</th><th>success</th><th>info</th></tr>';
-                    emails.forEach(l=>{
-                        eh += `< tr ><td>${esc(l.id)}</td><td>${esc(l.order_id)}</td><td>${esc(l.sentAt)}</td><td>${esc(l.recipient)}</td><td>${esc(l.subject)}</td><td>${esc(l.success)}</td><td>${esc(l.info)}</td></tr > `;
-                    });
-                    eh += '</table>';
-                    document.getElementById('emails').innerHTML = eh;
-                }
-                document.addEventListener('click', async (ev)=>{
-                    const btn = ev.target;
-                    if (btn && btn.id === 'retryAll'){
-                        btn.disabled = true;
-                        const resp = await fetch('/admin/retry/all', { method: 'POST' });
-                        if (!resp.ok) alert('Retry all failed');
-                        btn.disabled = false;
-                        load();
-                        return;
-                    }
-                    if (btn.classList.contains('retry')){
-                        const id = btn.getAttribute('data-id');
-                        btn.disabled = true;
-                        const resp = await fetch('/admin/retry/'+encodeURIComponent(id)+'/retry', { method: 'POST' });
-                        if (!resp.ok) alert('Retry failed');
-                        load();
-                    }
-                    if (btn.classList.contains('del')){
-                        const id = btn.getAttribute('data-id');
-                        if (!confirm('Delete retry entry?')) return;
-                        const resp = await fetch('/admin/retry/'+encodeURIComponent(id)+'/delete', { method: 'POST' });
-                        if (!resp.ok) alert('Delete failed');
-                        load();
-                    }
-                    if (btn && btn.id === 'sendDigestNow'){
-                        btn.disabled = true;
-                        const resp = await fetch('/admin/digest/send', { method: 'POST' });
-                        if (!resp.ok) { alert('Send digest failed'); btn.disabled = false; return; }
-                        alert('Digest requested');
-                        btn.disabled = false;
-                        load();
-                    }
-                    if (btn && btn.id === 'saveSettings'){
-                        const enabled = document.getElementById('alertsEnabled').checked ? '1' : '0';
-                        const threshold = document.getElementById('alertThreshold').value || '3';
-                        const resp = await fetch('/admin/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ALERTS_ENABLED: enabled, ALERT_THRESHOLD: threshold }) });
-                        if (!resp.ok) { alert('Failed to save settings'); return; }
-                        document.getElementById('settingsMsg').textContent = 'Saved';
-                        setTimeout(()=>{ document.getElementById('settingsMsg').textContent = ''; }, 2500);
-                        load();
-                    }
-                });
-                load();
-                setInterval(load, 30*1000);
-            </script>
-        </body>
-        </html>
-    `);
+    const html = '<!doctype html><html><head><meta charset="utf-8"><title>Admin</title></head><body style="font-family:Arial,Helvetica,sans-serif;padding:20px;">' +
+        '<h1>Admin</h1><p>Use the API endpoints to view orders, retries and logs.</p>' +
+        '<ul><li><a href="/admin/orders">Orders (JSON)</a></li><li><a href="/admin/email_retries">Email retries (JSON)</a></li><li><a href="/admin/email_logs">Email logs (JSON)</a></li></ul>' +
+        '</body></html>';
+    res.type('html').send(html);
 });
+
+function escHtml(s) { return String(s || ''); }
+
+// Digest endpoint (simple)
+app.post('/admin/digest/send', adminAuth, (req, res) => {
+    // For safety, reuse existing sendDigestNow-like behavior: gather retries over threshold and try to send admin email
+    const adminEmail = process.env.ADMIN_EMAIL || '';
+    const transporter = createTransporter();
+    if (!adminEmail || !transporter) return res.status(500).json({ error: 'admin email or SMTP not configured' });
+    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
+    db.all('SELECT * FROM email_retries WHERE attempts >= ? ORDER BY attempts DESC LIMIT 100', [threshold], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        if (!rows || rows.length === 0) return res.json({ ok: true, sent: 0 });
+        const lines = rows.map(r => `Order: ${r.order_id || ''} | To: ${r.recipient} | Attempts: ${r.attempts}`);
+        const mailOptions = { from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '', to: adminEmail, subject: `Digest: ${rows.length} persistent email failures`, text: `Digest:\n\n${lines.join('\n')}` };
+        transporter.sendMail(mailOptions, (err, info) => {
+            const logId = `${Date.now().toString(36)}-log`;
+            const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            insert.run(logId, '', new Date().toISOString(), adminEmail, mailOptions.subject, err ? 0 : 1, err ? (err.message || String(err)) : ((info && info.response) ? info.response : 'sent'));
+            insert.finalize();
+            if (!err) setSetting('LAST_DIGEST_AT', String(Date.now()));
+            return res.json({ ok: !err, sent: rows.length });
+        });
+    });
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
