@@ -1,5 +1,10 @@
 import 'package:ecommerce_app/models/cart.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:ecommerce_app/config.dart';
 
 class CheckoutFormPage extends StatefulWidget {
   final Cart cart;
@@ -30,28 +35,174 @@ class _CheckoutFormPageState extends State<CheckoutFormPage> {
     super.dispose();
   }
 
-  void _submitOrder() {
+  bool _isLoading = false;
+
+  Future<void> _submitOrder() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // In a real app you'd send the order to a server here.
-    widget.cart.clearCart();
+    setState(() {
+      _isLoading = true;
+    });
+    // If a publishable key isn't set, fallback to server-only order creation.
+    final useStripe =
+        stripePublishableKey.isNotEmpty &&
+        !stripePublishableKey.contains('YOUR_');
 
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Order Placed'),
-        content: const Text('Thank you — your order has been placed.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // close dialog
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            child: const Text('OK'),
+    try {
+      if (useStripe) {
+        Stripe.publishableKey = stripePublishableKey;
+
+        // Request PaymentIntent client secret from server
+        final intentUri = Uri.parse('$serverBaseUrl/create-payment-intent');
+        final intentResp = await http.post(
+          intentUri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'amount': widget.cart.orderTotal.toDouble(),
+            'currency': 'usd',
+          }),
+        );
+
+        if (intentResp.statusCode != 200) {
+          throw Exception('Payment intent creation failed: ${intentResp.body}');
+        }
+
+        final intentBody = jsonDecode(intentResp.body);
+        final clientSecret = intentBody['clientSecret'];
+
+        // Initialize and present PaymentSheet
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            paymentIntentClientSecret: clientSecret,
+            merchantDisplayName: 'Demo Shop',
           ),
-        ],
-      ),
-    );
+        );
+
+        await Stripe.instance.presentPaymentSheet();
+
+        // Payment successful — create order on server
+        final payload = {
+          'customer': {
+            'name': _nameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'address': _addressController.text.trim(),
+            'city': _cityController.text.trim(),
+            'postal': _postalController.text.trim(),
+          },
+          'items': widget.cart.cart
+              .map(
+                (s) => {
+                  'name': s.name,
+                  'price': s.price,
+                  'quantity': s.quantity,
+                },
+              )
+              .toList(),
+          'total': widget.cart.orderTotal,
+          'coupon': widget.cart.appliedCoupon,
+        };
+
+        final uri = Uri.parse('$serverBaseUrl/orders');
+        final resp = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(payload),
+        );
+
+        if (resp.statusCode == 200) {
+          final body = jsonDecode(resp.body);
+          final id = body['id'] ?? '';
+
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Payment & Order Placed'),
+              content: Text('Thank you — payment succeeded.\nOrder id: $id'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // close dialog
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+
+          widget.cart.clearCart();
+        } else {
+          throw Exception('Order creation failed: ${resp.body}');
+        }
+      } else {
+        // Fallback: create order directly without payment
+        final payload = {
+          'customer': {
+            'name': _nameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'address': _addressController.text.trim(),
+            'city': _cityController.text.trim(),
+            'postal': _postalController.text.trim(),
+          },
+          'items': widget.cart.cart
+              .map(
+                (s) => {
+                  'name': s.name,
+                  'price': s.price,
+                  'quantity': s.quantity,
+                },
+              )
+              .toList(),
+          'total': widget.cart.orderTotal,
+          'coupon': widget.cart.appliedCoupon,
+        };
+
+        final uri = Uri.parse('$serverBaseUrl/orders');
+        final resp = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(payload),
+        );
+
+        if (resp.statusCode == 200) {
+          final body = jsonDecode(resp.body);
+          final id = body['id'] ?? '';
+
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Order Placed'),
+              content: Text(
+                'Thank you — your order has been placed.\nOrder id: $id',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // close dialog
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+
+          widget.cart.clearCart();
+        } else {
+          throw Exception('Order creation failed: ${resp.body}');
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -107,11 +258,13 @@ class _CheckoutFormPageState extends State<CheckoutFormPage> {
                         decoration: const InputDecoration(labelText: 'Email'),
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return 'Enter your email';
+                          }
                           final email = v.trim();
-                          if (!email.contains('@'))
+                          if (!email.contains('@')) {
                             return 'Enter a valid email';
+                          }
                           return null;
                         },
                       ),
@@ -152,8 +305,17 @@ class _CheckoutFormPageState extends State<CheckoutFormPage> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: _submitOrder,
-                        child: const Text('Place Order'),
+                        onPressed: _isLoading ? null : _submitOrder,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Place Order'),
                       ),
                     ],
                   ),
