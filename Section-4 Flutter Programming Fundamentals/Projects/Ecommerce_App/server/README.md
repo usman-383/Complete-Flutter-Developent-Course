@@ -27,3 +27,9 @@ Email setup:
 - To enable order confirmation emails, add SMTP settings to your `.env` (see `.env.example`):
   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SENDER_EMAIL`.
 - The server will attempt to send a plain-text confirmation email to the customer's email after the order is saved.
+
+Admin UI
+
+- The server includes a simple password-protected admin UI at `http://localhost:3000/admin`.
+- Set `ADMIN_USER` and `ADMIN_PASS` in your `.env` (defaults are shown in `.env.example`).
+- The admin page lists recent orders and email logs.

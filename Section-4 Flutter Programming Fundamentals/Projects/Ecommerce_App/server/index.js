@@ -23,6 +23,15 @@ db.serialize(() => {
         total INTEGER,
         coupon TEXT
     )`);
+    db.run(`CREATE TABLE IF NOT EXISTS email_logs (
+        id TEXT PRIMARY KEY,
+        order_id TEXT,
+        sentAt TEXT,
+        recipient TEXT,
+        subject TEXT,
+        success INTEGER,
+        info TEXT
+    )`);
 });
 
 app.post('/orders', (req, res) => {
@@ -69,14 +78,47 @@ app.post('/orders', (req, res) => {
                 .map((it) => `${it.quantity} x ${it.name} (@${it.price})`)
                 .join('\n');
 
+            const htmlItems = (order.items || [])
+                .map((it) => `<li>${it.quantity} x ${it.name} (@$${it.price})</li>`)
+                .join('');
+
             const mailOptions = {
                 from: sender,
                 to: order.customer.email,
                 subject: `Order Confirmation — ${id}`,
                 text: `Thank you for your order!\n\nOrder id: ${id}\n\nItems:\n${itemsSummary}\n\nTotal: $${order.total}\n\nWe will process and ship your order soon.`,
+                html: `
+                    <div style="font-family: Arial, Helvetica, sans-serif; color: #222;">
+                        <h2 style="color:#333;">Thank you for your order!</h2>
+                        <p>Order id: <strong>${id}</strong></p>
+                        <h4>Items</h4>
+                        <ul style="line-height:1.6;">${htmlItems}</ul>
+                        <p><strong>Total: $${order.total}</strong></p>
+                        <hr />
+                        <p style="font-size:0.9em; color:#666;">We will process and ship your order soon.</p>
+                    </div>
+                `,
             };
 
             transporter.sendMail(mailOptions, (err, info) => {
+                const logId = `${Date.now().toString(36)}-log`;
+                const sentAt = new Date().toISOString();
+                const recipient = order.customer.email || '';
+                const subject = mailOptions.subject;
+                const success = err ? 0 : 1;
+                const infoText = err ? (err.message || String(err)) : (info && info.response ? info.response : 'sent');
+
+                // insert log into DB
+                try {
+                    const insert = db.prepare(
+                        'INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                    );
+                    insert.run(logId, id, sentAt, recipient, subject, success, infoText);
+                    insert.finalize();
+                } catch (e) {
+                    console.error('Failed to insert email log', e);
+                }
+
                 if (err) {
                     console.error('Failed to send confirmation email', err);
                 } else {
@@ -120,3 +162,91 @@ app.post('/create-payment-intent', async (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+
+// --- Admin UI and APIs (basic auth protected) ---
+function adminAuth(req, res, next) {
+    const auth = req.headers['authorization'];
+    const adminUser = process.env.ADMIN_USER || '';
+    const adminPass = process.env.ADMIN_PASS || '';
+
+    if (!adminUser || !adminPass) {
+        return res.status(403).send('Admin not configured');
+    }
+
+    if (!auth || !auth.startsWith('Basic ')) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+        return res.status(401).send('Authentication required');
+    }
+
+    const base64Credentials = auth.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    const [user, pass] = credentials.split(':');
+
+    if (user === adminUser && pass === adminPass) return next();
+
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Invalid credentials');
+}
+
+app.get('/admin/orders', adminAuth, (req, res) => {
+    db.all('SELECT * FROM orders ORDER BY createdAt DESC LIMIT 200', (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        const parsed = rows.map((r) => ({
+            id: r.id,
+            createdAt: r.createdAt,
+            customer: JSON.parse(r.customer || '{}'),
+            items: JSON.parse(r.items || '[]'),
+            total: r.total,
+            coupon: r.coupon,
+        }));
+        res.json(parsed);
+    });
+});
+
+app.get('/admin/email_logs', adminAuth, (req, res) => {
+    db.all('SELECT * FROM email_logs ORDER BY sentAt DESC LIMIT 200', (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        res.json(rows);
+    });
+});
+
+app.get('/admin', adminAuth, (req, res) => {
+    res.type('html').send(`
+        <!doctype html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>Admin — Orders</title>
+            <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f6f6f6} table{width:100%;border-collapse:collapse} th,td{padding:8px;border:1px solid #ddd} th{background:#eee}</style>
+        </head>
+        <body>
+            <h1>Orders</h1>
+            <div id="orders"></div>
+            <h2>Email Logs</h2>
+            <div id="emails"></div>
+            <script>
+                async function load(){
+                    const o = await fetch('/admin/orders');
+                    const orders = await o.json();
+                    let html = '<table><tr><th>id</th><th>createdAt</th><th>customer</th><th>items</th><th>total</th><th>coupon</th></tr>';
+                    orders.forEach(r=>{
+                        html += `< tr ><td>${r.id}</td><td>${r.createdAt}</td><td>${r.customer.name || r.customer.email || ''}</td><td>${(r.items||[]).map(i=>i.name+ ' x'+i.quantity).join('<br/>')}</td><td>${r.total}</td><td>${r.coupon||''}</td></tr > `;
+                    });
+                    html += '</table>';
+                    document.getElementById('orders').innerHTML = html;
+
+                    const e = await fetch('/admin/email_logs');
+                    const emails = await e.json();
+                    let eh = '<table><tr><th>id</th><th>order</th><th>sentAt</th><th>recipient</th><th>subject</th><th>success</th><th>info</th></tr>';
+                    emails.forEach(l=>{
+                        eh += `< tr ><td>${l.id}</td><td>${l.order_id}</td><td>${l.sentAt}</td><td>${l.recipient}</td><td>${l.subject}</td><td>${l.success}</td><td>${l.info}</td></tr > `;
+                    });
+                    eh += '</table>';
+                    document.getElementById('emails').innerHTML = eh;
+                }
+                load();
+            </script>
+        </body>
+        </html>
+    `);
+});
