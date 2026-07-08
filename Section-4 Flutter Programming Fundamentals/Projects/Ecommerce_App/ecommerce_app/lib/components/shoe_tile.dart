@@ -4,8 +4,9 @@ import '../models/shoe.dart';
 
 class shoeTile extends StatelessWidget {
   final Shoe shoe;
+  final VoidCallback? onAddToCart;
 
-  const shoeTile({super.key, required this.shoe});
+  const shoeTile({super.key, required this.shoe, this.onAddToCart});
 
   @override
   Widget build(BuildContext context) {
@@ -57,12 +58,15 @@ class shoeTile extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(8),
+                    GestureDetector(
+                      onTap: onAddToCart,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.add, color: Colors.white),
                       ),
-                      child: const Icon(Icons.add, color: Colors.white),
                     ),
                   ],
                 ),

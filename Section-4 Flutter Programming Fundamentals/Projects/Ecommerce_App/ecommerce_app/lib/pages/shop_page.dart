@@ -1,23 +1,18 @@
-import 'package:ecommerce_app/models/shoe.dart';
+import 'package:ecommerce_app/models/cart.dart';
 import 'package:flutter/material.dart';
 
 import '../components/shoe_tile.dart';
 
 class ShopPage extends StatefulWidget {
-  const ShopPage({super.key});
+  final Cart cart;
+
+  const ShopPage({super.key, required this.cart});
 
   @override
   State<ShopPage> createState() => _ShopPageState();
 }
 
 class _ShopPageState extends State<ShopPage> {
-  final List<String> imagePaths = [
-    'lib/images/image_1.png',
-    'lib/images/image_2.jpg',
-    'lib/images/image_3.jpg',
-    'lib/images/image_4.png',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -57,7 +52,7 @@ class _ShopPageState extends State<ShopPage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text(
-                      'Not Picks 🔥',
+                      'Hot Picks 🔥',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
@@ -79,16 +74,20 @@ class _ShopPageState extends State<ShopPage> {
               SizedBox(
                 height: 300,
                 child: ListView.builder(
-                  itemCount: imagePaths.length,
+                  itemCount: widget.cart.shoeShop.length,
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) {
-                    final shoe = Shoe(
-                      name: 'Air Jordan',
-                      price: '240',
-                      imagePath: imagePaths[index],
-                      description: 'Cool shoe',
+                    final shoe = widget.cart.shoeShop[index];
+                    return shoeTile(
+                      shoe: shoe,
+                      onAddToCart: () {
+                        widget.cart.addToCart(shoe);
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${shoe.name} added to cart')),
+                        );
+                      },
                     );
-                    return shoeTile(shoe: shoe);
                   },
                 ),
               ),

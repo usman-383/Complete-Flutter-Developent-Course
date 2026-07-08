@@ -1,41 +1,51 @@
-import 'shoe.dart';
+﻿import 'shoe.dart';
 
 class Cart {
-  //list of shoes for sale
-  List<Shoe> shoeShop = [
+  final List<Shoe> _shoeShop = [
     Shoe(
       name: 'Zoom Freak',
       price: '236',
-      imagePath: 'The forward-thinking design of his latest signature shoe.',
-      description: 'lib/images/image_1.png',
+      imagePath: 'lib/images/image_1.png',
+      description: 'The forward-thinking design of his latest signature shoe.',
     ),
     Shoe(
       name: 'Air Jordan',
       price: '220',
-      imagePath: 'You\'ve got the hope and the speed-lac up in shoes.',
-      description: 'lib/images/image_2.png',
+      imagePath: 'lib/images/image_2.jpg',
+      description: 'You\'ve got the hope and the speed-lac up in shoes.',
     ),
     Shoe(
       name: 'KD Treys',
       price: '240',
-      imagePath: 'A secure midfoot scrip is suited for scoring.',
-      description: 'lib/images/image_3.png',
+      imagePath: 'lib/images/image_3.jpg',
+      description: 'A secure midfoot scrip is suited for scoring.',
     ),
     Shoe(
-      name: 'Zoom Freak',
-      price: '236',
-      imagePath: 'The forward-thinking design of his latest signature shoe.',
-      description: 'lib/images/image_1.png',
+      name: 'Kyrie 6',
+      price: '190',
+      imagePath: 'lib/images/image_4.png',
+      description: 'Bouncy cushioning is priced with soft yet supportive foam for rest.',
     ),
   ];
 
-  //list of items in user cart
+  final List<Shoe> _cartItems = [];
 
-  //get list of shoes for sale
+  List<Shoe> get shoeShop => _shoeShop;
 
-  //get cart
+  List<Shoe> get cart => _cartItems;
 
-  //add items to cart
+  int get totalPrice {
+    return _cartItems.fold(0, (sum, shoe) {
+      final price = int.tryParse(shoe.price) ?? 0;
+      return sum + price;
+    });
+  }
 
-  //remove items from cart
+  void addToCart(Shoe shoe) {
+    _cartItems.add(shoe);
+  }
+
+  void removeFromCart(Shoe shoe) {
+    _cartItems.remove(shoe);
+  }
 }
