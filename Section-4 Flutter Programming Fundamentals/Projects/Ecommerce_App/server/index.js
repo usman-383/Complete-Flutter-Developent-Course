@@ -32,7 +32,100 @@ db.serialize(() => {
         success INTEGER,
         info TEXT
     )`);
+    db.run(`CREATE TABLE IF NOT EXISTS email_retries (
+        id TEXT PRIMARY KEY,
+        order_id TEXT,
+        recipient TEXT,
+        subject TEXT,
+        text TEXT,
+        html TEXT,
+        attempts INTEGER DEFAULT 0,
+        nextAttemptAt INTEGER,
+        lastError TEXT,
+        createdAt INTEGER
+    )`);
 });
+
+// Helper: create nodemailer transporter from env
+function createTransporter() {
+    const smtpHost = process.env.SMTP_HOST || '';
+    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 0;
+    const smtpUser = process.env.SMTP_USER || '';
+    const smtpPass = process.env.SMTP_PASS || '';
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) return null;
+    return nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+    });
+}
+
+// Enqueue an email for retry (persistent)
+function enqueueEmailRetry(orderId, recipient, subject, text, html) {
+    const id = `${Date.now().toString(36)}-retry`;
+    const now = Date.now();
+    const next = now + 60 * 1000; // first retry after 1 minute
+    const stmt = db.prepare(
+        'INSERT INTO email_retries (id, order_id, recipient, subject, text, html, attempts, nextAttemptAt, lastError, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    stmt.run(id, orderId, recipient, subject, text, html, 0, next, '', now, (err) => {
+        if (err) console.error('Failed to enqueue email retry', err);
+        stmt.finalize();
+    });
+}
+
+// Background worker: process due retries
+async function processEmailRetries() {
+    const now = Date.now();
+    db.all('SELECT * FROM email_retries WHERE nextAttemptAt <= ? ORDER BY nextAttemptAt ASC LIMIT 10', [now], (err, rows) => {
+        if (err) return console.error('Retry worker DB error', err);
+        if (!rows || rows.length === 0) return;
+        const transporter = createTransporter();
+        if (!transporter) return console.warn('SMTP not configured; cannot process email retries');
+
+        rows.forEach((r) => {
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
+                to: r.recipient,
+                subject: r.subject,
+                text: r.text,
+                html: r.html,
+            };
+
+            transporter.sendMail(mailOptions, (err, info) => {
+                const sentAt = new Date().toISOString();
+                const logId = `${Date.now().toString(36)}-log`;
+                if (!err) {
+                    // insert success log
+                    const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                    insert.run(logId, r.order_id, sentAt, r.recipient, r.subject, 1, (info && info.response) ? info.response : 'sent');
+                    insert.finalize();
+                    // remove retry
+                    db.run('DELETE FROM email_retries WHERE id = ?', [r.id]);
+                    console.log('Retry email sent for', r.id);
+                } else {
+                    const attempts = (r.attempts || 0) + 1;
+                    const backoff = Math.min(24 * 60 * 60 * 1000, Math.pow(2, attempts) * 60 * 1000); // exponential, cap 24h
+                    const nextAttempt = Date.now() + backoff;
+                    const update = db.prepare('UPDATE email_retries SET attempts = ?, nextAttemptAt = ?, lastError = ? WHERE id = ?');
+                    update.run(attempts, nextAttempt, (err && err.message) ? err.message : String(err), r.id);
+                    update.finalize();
+
+                    const logIdFail = `${Date.now().toString(36)}-log`;
+                    const infoText = err && err.message ? err.message : String(err);
+                    const insertFail = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                    insertFail.run(logIdFail, r.order_id, new Date().toISOString(), r.recipient, r.subject, 0, infoText);
+                    insertFail.finalize();
+                    console.warn('Retry failed for', r.id, 'scheduling next attempt', new Date(nextAttempt).toISOString());
+                }
+            });
+        });
+    });
+}
+
+// start retry worker every minute
+setInterval(processEmailRetries, 60 * 1000);
 
 app.post('/orders', (req, res) => {
     const order = req.body;
@@ -121,6 +214,12 @@ app.post('/orders', (req, res) => {
 
                 if (err) {
                     console.error('Failed to send confirmation email', err);
+                    // enqueue persistent retry
+                    try {
+                        enqueueEmailRetry(id, recipient, subject, mailOptions.text, mailOptions.html);
+                    } catch (e) {
+                        console.error('Failed to enqueue retry', e);
+                    }
                 } else {
                     console.log('Confirmation email sent:', info.response);
                 }
@@ -210,6 +309,24 @@ app.get('/admin/email_logs', adminAuth, (req, res) => {
     });
 });
 
+app.get('/admin/email_retries', adminAuth, (req, res) => {
+    db.all('SELECT * FROM email_retries ORDER BY nextAttemptAt ASC LIMIT 200', (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        // convert timestamps
+        const parsed = (rows || []).map(r => ({
+            id: r.id,
+            order_id: r.order_id,
+            recipient: r.recipient,
+            subject: r.subject,
+            attempts: r.attempts,
+            nextAttemptAt: r.nextAttemptAt,
+            lastError: r.lastError,
+            createdAt: r.createdAt,
+        }));
+        res.json(parsed);
+    });
+});
+
 app.get('/admin', adminAuth, (req, res) => {
     res.type('html').send(`
         <!doctype html>
@@ -217,34 +334,55 @@ app.get('/admin', adminAuth, (req, res) => {
         <head>
             <meta charset="utf-8" />
             <title>Admin — Orders</title>
-            <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f6f6f6} table{width:100%;border-collapse:collapse} th,td{padding:8px;border:1px solid #ddd} th{background:#eee}</style>
+            <style>
+              body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f6f6f6}
+              table{width:100%;border-collapse:collapse;margin-bottom:20px}
+              th,td{padding:8px;border:1px solid #ddd;text-align:left}
+              th{background:#eee}
+              h1,h2{margin-top:0}
+            </style>
         </head>
         <body>
             <h1>Orders</h1>
             <div id="orders"></div>
+            <h2>Pending Email Retries</h2>
+            <div id="retries"></div>
             <h2>Email Logs</h2>
             <div id="emails"></div>
             <script>
+                function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
                 async function load(){
-                    const o = await fetch('/admin/orders');
-                    const orders = await o.json();
-                    let html = '<table><tr><th>id</th><th>createdAt</th><th>customer</th><th>items</th><th>total</th><th>coupon</th></tr>';
-                    orders.forEach(r=>{
-                        html += `< tr ><td>${r.id}</td><td>${r.createdAt}</td><td>${r.customer.name || r.customer.email || ''}</td><td>${(r.items||[]).map(i=>i.name+ ' x'+i.quantity).join('<br/>')}</td><td>${r.total}</td><td>${r.coupon||''}</td></tr > `;
-                    });
-                    html += '</table>';
-                    document.getElementById('orders').innerHTML = html;
+                    const [oR, rR, eR] = await Promise.all([fetch('/admin/orders'), fetch('/admin/email_retries'), fetch('/admin/email_logs')]);
+                    const orders = await oR.json();
+                    const retries = await rR.json();
+                    const emails = await eR.json();
 
-                    const e = await fetch('/admin/email_logs');
-                    const emails = await e.json();
+                    let oh = '<table><tr><th>id</th><th>createdAt</th><th>customer</th><th>items</th><th>total</th><th>coupon</th></tr>';
+                    orders.forEach(r=>{
+                        const customer = r.customer && (r.customer.name || r.customer.email) ? esc(r.customer.name||r.customer.email) : '';
+                        const items = (r.items||[]).map(i=>esc(i.name)+' x'+(i.quantity||0)).join('<br/>');
+                        oh += `< tr ><td>${esc(r.id)}</td><td>${esc(r.createdAt)}</td><td>${customer}</td><td>${items}</td><td>${esc(r.total)}</td><td>${esc(r.coupon||'')}</td></tr > `;
+                    });
+                    oh += '</table>';
+                    document.getElementById('orders').innerHTML = oh;
+
+                    let rh = '<table><tr><th>id</th><th>order</th><th>recipient</th><th>attempts</th><th>nextAttemptAt</th><th>lastError</th></tr>';
+                    retries.forEach(rr=>{
+                        const nextAt = rr.nextAttemptAt ? new Date(rr.nextAttemptAt).toISOString() : '';
+                        rh += `< tr ><td>${esc(rr.id)}</td><td>${esc(rr.order_id)}</td><td>${esc(rr.recipient)}</td><td>${esc(rr.attempts)}</td><td>${esc(nextAt)}</td><td>${esc(rr.lastError)}</td></tr > `;
+                    });
+                    rh += '</table>';
+                    document.getElementById('retries').innerHTML = rh;
+
                     let eh = '<table><tr><th>id</th><th>order</th><th>sentAt</th><th>recipient</th><th>subject</th><th>success</th><th>info</th></tr>';
                     emails.forEach(l=>{
-                        eh += `< tr ><td>${l.id}</td><td>${l.order_id}</td><td>${l.sentAt}</td><td>${l.recipient}</td><td>${l.subject}</td><td>${l.success}</td><td>${l.info}</td></tr > `;
+                        eh += `< tr ><td>${esc(l.id)}</td><td>${esc(l.order_id)}</td><td>${esc(l.sentAt)}</td><td>${esc(l.recipient)}</td><td>${esc(l.subject)}</td><td>${esc(l.success)}</td><td>${esc(l.info)}</td></tr > `;
                     });
                     eh += '</table>';
                     document.getElementById('emails').innerHTML = eh;
                 }
                 load();
+                setInterval(load, 30*1000);
             </script>
         </body>
         </html>
