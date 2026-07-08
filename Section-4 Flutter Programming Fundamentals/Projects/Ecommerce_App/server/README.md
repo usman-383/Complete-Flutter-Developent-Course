@@ -33,3 +33,14 @@ Admin UI
 - The server includes a simple password-protected admin UI at `http://localhost:3000/admin`.
 - Set `ADMIN_USER` and `ADMIN_PASS` in your `.env` (defaults are shown in `.env.example`).
 - The admin page lists recent orders and email logs.
+
+Retry queue for failed emails
+
+- If email delivery fails, the server now enqueues the email in a persistent retry queue stored in `orders.db`.
+- A background worker attempts retries with exponential backoff (capped at 24 hours).
+- You can view pending retries at `http://localhost:3000/admin` under "Pending Email Retries".
+-
+- Admin alerts
+-
+- When a queued email fails repeatedly the server can send an admin alert email. Configure `ADMIN_EMAIL` and `ALERT_THRESHOLD` in your `.env` to enable this. The default threshold is `3` failures.
+- The admin UI now includes a "Retry All" button to attempt sending all queued retries immediately.
