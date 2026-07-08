@@ -68,7 +68,16 @@ class _CartPageState extends State<CartPage> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    const SizedBox(height: 8),
+                    if (widget.cart.appliedCoupon.isNotEmpty) ...[
+                      Text(
+                        'Applied: ${widget.cart.appliedCoupon} — New total: \$${widget.cart.applyCoupon(widget.cart.appliedCoupon)}',
+                        style: const TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     TextField(
                       controller: _couponController,
                       decoration: InputDecoration(
@@ -90,6 +99,7 @@ class _CartPageState extends State<CartPage> {
                         setState(() {});
 
                         if (widget.cart.appliedCoupon.isNotEmpty) {
+                          _couponController.clear();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
