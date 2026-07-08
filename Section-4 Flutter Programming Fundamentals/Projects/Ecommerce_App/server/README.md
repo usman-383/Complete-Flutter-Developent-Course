@@ -43,4 +43,8 @@ Retry queue for failed emails
 - Admin alerts
 -
 - When a queued email fails repeatedly the server can send an admin alert email. Configure `ADMIN_EMAIL` and `ALERT_THRESHOLD` in your `.env` to enable this. The default threshold is `3` failures.
+
+- Daily digest
+
+- The server can also send a daily digest summarizing persistent failures (by default enabled). Control with `DIGEST_ENABLED` in your `.env`. The digest is sent to `ADMIN_EMAIL` and will not be sent more than once in 24 hours.
 - The admin UI now includes a "Retry All" button to attempt sending all queued retries immediately.

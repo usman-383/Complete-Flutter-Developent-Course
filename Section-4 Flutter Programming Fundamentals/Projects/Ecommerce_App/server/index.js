@@ -501,6 +501,57 @@ You can review and manage retries at ${process.env.SERVER_BASE_URL || 'http://lo
     });
 }
 
+// Daily digest: send a summary of persistent failures (runs hourly and checks last-send)
+function sendDigestIfDue() {
+    const digestEnabled = (getSettingSync('DIGEST_ENABLED') || process.env.DIGEST_ENABLED || '1') === '1';
+    if (!digestEnabled) return;
+    const adminEmail = process.env.ADMIN_EMAIL || '';
+    const transporter = createTransporter();
+    if (!adminEmail || !transporter) return;
+
+    const lastDigest = parseInt(getSettingSync('LAST_DIGEST_AT') || '0', 10);
+    const now = Date.now();
+    // send at most once per 24h
+    if (lastDigest && (now - lastDigest) < (24 * 60 * 60 * 1000)) return;
+
+    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
+    db.all('SELECT * FROM email_retries WHERE attempts >= ? ORDER BY attempts DESC LIMIT 100', [threshold], (err, rows) => {
+        if (err) return console.error('Digest DB error', err);
+        if (!rows || rows.length === 0) return;
+
+        const lines = rows.map(r => `Order: ${r.order_id || ''} | To: ${r.recipient} | Attempts: ${r.attempts} | Last error: ${r.lastError || ''}`);
+        const text = `Daily digest of persistent email failures:\n\n${lines.join('\n\n')}`;
+        const html = `<div><h3>Persistent email failures</h3><ul>${rows.map(r => `<li>Order: ${r.order_id || ''} — To: ${r.recipient} — Attempts: ${r.attempts} — Last error: ${escHtml(r.lastError || '')}</li>`).join('')}</ul></div>`;
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
+            to: adminEmail,
+            subject: `Digest: ${rows.length} persistent email failures`,
+            text,
+            html,
+        };
+
+        transporter.sendMail(mailOptions, (err, info) => {
+            const logId = `${Date.now().toString(36)}-log`;
+            const sentAt = new Date().toISOString();
+            try {
+                const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                insert.run(logId, '', sentAt, adminEmail, mailOptions.subject, err ? 0 : 1, err ? (err.message || String(err)) : ((info && info.response) ? info.response : 'sent'));
+                insert.finalize();
+            } catch (e) { console.error('Failed to log digest', e); }
+
+            if (!err) {
+                setSetting('LAST_DIGEST_AT', String(Date.now()));
+            }
+        });
+    });
+}
+
+function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// check digest once per hour
+setInterval(sendDigestIfDue, 60 * 60 * 1000);
+
 // Admin: delete a retry entry
 app.post('/admin/retry/:id/delete', adminAuth, (req, res) => {
     const id = req.params.id;
@@ -606,7 +657,7 @@ app.get('/admin', adminAuth, (req, res) => {
                     orders.forEach(r=>{
                         const customer = r.customer && (r.customer.name || r.customer.email) ? esc(r.customer.name||r.customer.email) : '';
                         const items = (r.items||[]).map(i=>esc(i.name)+' x'+(i.quantity||0)).join('<br/>');
-                        oh += `<tr><td>${esc(r.id)}</td><td>${esc(r.createdAt)}</td><td>${customer}</td><td>${items}</td><td>${esc(r.total)}</td><td>${esc(r.coupon||'')}</td></tr>`;
+                        oh += `< tr ><td>${esc(r.id)}</td><td>${esc(r.createdAt)}</td><td>${customer}</td><td>${items}</td><td>${esc(r.total)}</td><td>${esc(r.coupon||'')}</td></tr > `;
                     });
                     oh += '</table>';
                     document.getElementById('orders').innerHTML = oh;
@@ -614,14 +665,14 @@ app.get('/admin', adminAuth, (req, res) => {
                     let rh = '<table><tr><th>id</th><th>order</th><th>recipient</th><th>attempts</th><th>nextAttemptAt</th><th>lastError</th><th>actions</th></tr>';
                     retries.forEach(rr=>{
                         const nextAt = rr.nextAttemptAt ? new Date(rr.nextAttemptAt).toISOString() : '';
-                        rh += `<tr><td>${esc(rr.id)}</td><td>${esc(rr.order_id)}</td><td>${esc(rr.recipient)}</td><td>${esc(rr.attempts)}</td><td>${esc(nextAt)}</td><td>${esc(rr.lastError)}</td><td><button data-id="${esc(rr.id)}" class="retry">Retry Now</button> <button data-id="${esc(rr.id)}" class="del">Delete</button></td></tr>`;
+                        rh += `< tr ><td>${esc(rr.id)}</td><td>${esc(rr.order_id)}</td><td>${esc(rr.recipient)}</td><td>${esc(rr.attempts)}</td><td>${esc(nextAt)}</td><td>${esc(rr.lastError)}</td><td><button data-id="${esc(rr.id)}" class="retry">Retry Now</button> <button data-id="${esc(rr.id)}" class="del">Delete</button></td></tr > `;
                     });
                     rh += '</table>';
                     document.getElementById('retries').innerHTML = rh;
 
                     let eh = '<table><tr><th>id</th><th>order</th><th>sentAt</th><th>recipient</th><th>subject</th><th>success</th><th>info</th></tr>';
                     emails.forEach(l=>{
-                        eh += `<tr><td>${esc(l.id)}</td><td>${esc(l.order_id)}</td><td>${esc(l.sentAt)}</td><td>${esc(l.recipient)}</td><td>${esc(l.subject)}</td><td>${esc(l.success)}</td><td>${esc(l.info)}</td></tr>`;
+                        eh += `< tr ><td>${esc(l.id)}</td><td>${esc(l.order_id)}</td><td>${esc(l.sentAt)}</td><td>${esc(l.recipient)}</td><td>${esc(l.subject)}</td><td>${esc(l.success)}</td><td>${esc(l.info)}</td></tr > `;
                     });
                     eh += '</table>';
                     document.getElementById('emails').innerHTML = eh;
