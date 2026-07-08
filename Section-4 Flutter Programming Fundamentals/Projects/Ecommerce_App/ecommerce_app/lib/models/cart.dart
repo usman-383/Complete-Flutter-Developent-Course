@@ -44,12 +44,26 @@ class Cart extends ChangeNotifier {
 
   String get appliedCoupon => _appliedCoupon;
 
+  int get itemCount {
+    return _cartItems.fold(0, (sum, shoe) => sum + shoe.quantity);
+  }
+
   int get totalPrice {
     return _cartItems.fold(0, (sum, shoe) {
       final price = int.tryParse(shoe.price) ?? 0;
       return sum + (price * shoe.quantity);
     });
   }
+
+  int get discountAmount {
+    if (_appliedCoupon == 'SAVE10' && totalPrice >= 100) {
+      return 10;
+    }
+
+    return 0;
+  }
+
+  int get orderTotal => totalPrice - discountAmount;
 
   void addToCart(Shoe shoe) {
     final index = _cartItems.indexWhere(
@@ -105,6 +119,7 @@ class Cart extends ChangeNotifier {
 
   void clearCart() {
     _cartItems.clear();
+    _appliedCoupon = '';
     notifyListeners();
   }
 

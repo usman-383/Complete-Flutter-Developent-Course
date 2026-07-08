@@ -2,6 +2,8 @@ import 'package:ecommerce_app/components/cart_items.dart';
 import 'package:ecommerce_app/models/cart.dart';
 import 'package:flutter/material.dart';
 
+import 'order_summary_page.dart';
+
 class CartPage extends StatefulWidget {
   final Cart cart;
 
@@ -109,14 +111,14 @@ class _CartPageState extends State<CartPage> {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Checkout completed successfully',
-                                  ),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return OrderSummaryPage(cart: widget.cart);
+                                  },
                                 ),
                               );
-                              widget.cart.clearCart();
                             },
                             icon: const Icon(Icons.check_circle_outline),
                             label: const Text('Checkout'),
