@@ -53,6 +53,32 @@ db.serialize(() => {
     });
 });
 
+// Settings table and in-memory cache
+db.run(`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+)`);
+
+const SETTINGS = {};
+function loadSettings() {
+    db.all('SELECT key, value FROM settings', (err, rows) => {
+        if (err) return console.warn('Failed to load settings', err);
+        (rows || []).forEach(r => { SETTINGS[r.key] = r.value; });
+    });
+}
+loadSettings();
+
+function getSettingSync(key) {
+    if (Object.prototype.hasOwnProperty.call(SETTINGS, key)) return SETTINGS[key];
+    return process.env[key] || null;
+}
+
+function setSetting(key, value, cb) {
+    SETTINGS[key] = String(value);
+    const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    stmt.run(key, String(value), (err) => { stmt.finalize(); if (cb) cb && cb(err); });
+}
+
 // Helper: create nodemailer transporter from env
 function createTransporter() {
     const smtpHost = process.env.SMTP_HOST || '';
@@ -127,8 +153,9 @@ async function processEmailRetries() {
                     console.warn('Retry failed for', r.id, 'scheduling next attempt', new Date(nextAttempt).toISOString());
 
                     // If attempts reached threshold, notify admin (once)
-                    const threshold = parseInt(process.env.ALERT_THRESHOLD || '3', 10);
-                    if (attempts >= threshold) {
+                    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
+                    const alertsEnabled = (getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1') === '1';
+                    if (alertsEnabled && attempts >= threshold) {
                         // mark notified if not already
                         db.get('SELECT notified FROM email_retries WHERE id = ?', [r.id], (err2, row2) => {
                             if (err2) return;
@@ -352,6 +379,31 @@ app.get('/admin/email_retries', adminAuth, (req, res) => {
     });
 });
 
+// Admin: get or update runtime settings
+app.get('/admin/settings', adminAuth, (req, res) => {
+    res.json({
+        ALERT_THRESHOLD: getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3',
+        ALERTS_ENABLED: getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1',
+    });
+});
+
+app.post('/admin/settings', adminAuth, (req, res) => {
+    const body = req.body || {};
+    const tasks = [];
+    if (Object.prototype.hasOwnProperty.call(body, 'ALERT_THRESHOLD')) tasks.push(cb => setSetting('ALERT_THRESHOLD', String(body.ALERT_THRESHOLD), cb));
+    if (Object.prototype.hasOwnProperty.call(body, 'ALERTS_ENABLED')) tasks.push(cb => setSetting('ALERTS_ENABLED', String(body.ALERTS_ENABLED), cb));
+    if (tasks.length === 0) return res.json({ ok: true });
+    // run sequentially
+    let i = 0;
+    function runNext(err) {
+        if (err) return res.status(500).json({ error: 'Failed to save settings' });
+        if (i >= tasks.length) return res.json({ ok: true });
+        const t = tasks[i++];
+        t(runNext);
+    }
+    runNext();
+});
+
 // Admin: trigger immediate retry for a given retry id
 app.post('/admin/retry/:id/retry', adminAuth, (req, res) => {
     const id = req.params.id;
@@ -391,9 +443,10 @@ app.post('/admin/retry/:id/retry', adminAuth, (req, res) => {
                 const insertFail = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
                 insertFail.run(logId, row.order_id, new Date().toISOString(), row.recipient, row.subject, 0, infoText);
                 insertFail.finalize();
-                // notify admin if threshold reached
-                const threshold = parseInt(process.env.ALERT_THRESHOLD || '3', 10);
-                if (attempts >= threshold) {
+                // notify admin if threshold reached (and alerts enabled)
+                const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
+                const alertsEnabled = (getSettingSync('ALERTS_ENABLED') || process.env.ALERTS_ENABLED || '1') === '1';
+                if (alertsEnabled && attempts >= threshold) {
                     db.get('SELECT notified FROM email_retries WHERE id = ?', [id], (err2, row2) => {
                         if (!err2 && row2 && !row2.notified) {
                             notifyAdminAlert(row, attempts, (notifyErr) => {
@@ -520,8 +573,15 @@ app.get('/admin', adminAuth, (req, res) => {
             </style>
         </head>
         <body>
-            <h1>Orders</h1>
-            <div id="orders"></div>
+                        <h1>Orders</h1>
+                        <div id="settingsPanel" style="margin-bottom:12px; background:#fff; padding:10px; border:1px solid #e6e6e6;">
+                            <strong>Alert Settings</strong>
+                            <label style="margin-left:12px"><input type="checkbox" id="alertsEnabled"> Enable admin alert emails</label>
+                            <label style="margin-left:12px">Threshold: <input type="number" id="alertThreshold" min="1" style="width:70px"></label>
+                            <button id="saveSettings" style="margin-left:12px">Save</button>
+                            <span id="settingsMsg" style="margin-left:12px;color:green"></span>
+                        </div>
+                        <div id="orders"></div>
             <h2>Pending Email Retries</h2>
             <button id="retryAll" style="margin-bottom:12px">Retry All</button>
             <div id="retries"></div>
@@ -530,16 +590,23 @@ app.get('/admin', adminAuth, (req, res) => {
             <script>
                 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
                 async function load(){
-                    const [oR, rR, eR] = await Promise.all([fetch('/admin/orders'), fetch('/admin/email_retries'), fetch('/admin/email_logs')]);
+                    const [oR, rR, eR, sR] = await Promise.all([fetch('/admin/orders'), fetch('/admin/email_retries'), fetch('/admin/email_logs'), fetch('/admin/settings')]);
                     const orders = await oR.json();
                     const retries = await rR.json();
                     const emails = await eR.json();
+                    const settings = await sR.json();
+
+                    // populate settings UI
+                    try {
+                        document.getElementById('alertsEnabled').checked = (settings.ALERTS_ENABLED === '1' || settings.ALERTS_ENABLED === 1 || settings.ALERTS_ENABLED === 'true');
+                        document.getElementById('alertThreshold').value = settings.ALERT_THRESHOLD || '3';
+                    } catch(e){}
 
                     let oh = '<table><tr><th>id</th><th>createdAt</th><th>customer</th><th>items</th><th>total</th><th>coupon</th></tr>';
                     orders.forEach(r=>{
                         const customer = r.customer && (r.customer.name || r.customer.email) ? esc(r.customer.name||r.customer.email) : '';
                         const items = (r.items||[]).map(i=>esc(i.name)+' x'+(i.quantity||0)).join('<br/>');
-                        oh += `< tr ><td>${esc(r.id)}</td><td>${esc(r.createdAt)}</td><td>${customer}</td><td>${items}</td><td>${esc(r.total)}</td><td>${esc(r.coupon||'')}</td></tr > `;
+                        oh += `<tr><td>${esc(r.id)}</td><td>${esc(r.createdAt)}</td><td>${customer}</td><td>${items}</td><td>${esc(r.total)}</td><td>${esc(r.coupon||'')}</td></tr>`;
                     });
                     oh += '</table>';
                     document.getElementById('orders').innerHTML = oh;
@@ -547,14 +614,14 @@ app.get('/admin', adminAuth, (req, res) => {
                     let rh = '<table><tr><th>id</th><th>order</th><th>recipient</th><th>attempts</th><th>nextAttemptAt</th><th>lastError</th><th>actions</th></tr>';
                     retries.forEach(rr=>{
                         const nextAt = rr.nextAttemptAt ? new Date(rr.nextAttemptAt).toISOString() : '';
-                        rh += `< tr ><td>${esc(rr.id)}</td><td>${esc(rr.order_id)}</td><td>${esc(rr.recipient)}</td><td>${esc(rr.attempts)}</td><td>${esc(nextAt)}</td><td>${esc(rr.lastError)}</td><td><button data-id="${esc(rr.id)}" class="retry">Retry Now</button> <button data-id="${esc(rr.id)}" class="del">Delete</button></td></tr > `;
+                        rh += `<tr><td>${esc(rr.id)}</td><td>${esc(rr.order_id)}</td><td>${esc(rr.recipient)}</td><td>${esc(rr.attempts)}</td><td>${esc(nextAt)}</td><td>${esc(rr.lastError)}</td><td><button data-id="${esc(rr.id)}" class="retry">Retry Now</button> <button data-id="${esc(rr.id)}" class="del">Delete</button></td></tr>`;
                     });
                     rh += '</table>';
                     document.getElementById('retries').innerHTML = rh;
 
                     let eh = '<table><tr><th>id</th><th>order</th><th>sentAt</th><th>recipient</th><th>subject</th><th>success</th><th>info</th></tr>';
                     emails.forEach(l=>{
-                        eh += `< tr ><td>${esc(l.id)}</td><td>${esc(l.order_id)}</td><td>${esc(l.sentAt)}</td><td>${esc(l.recipient)}</td><td>${esc(l.subject)}</td><td>${esc(l.success)}</td><td>${esc(l.info)}</td></tr > `;
+                        eh += `<tr><td>${esc(l.id)}</td><td>${esc(l.order_id)}</td><td>${esc(l.sentAt)}</td><td>${esc(l.recipient)}</td><td>${esc(l.subject)}</td><td>${esc(l.success)}</td><td>${esc(l.info)}</td></tr>`;
                     });
                     eh += '</table>';
                     document.getElementById('emails').innerHTML = eh;
@@ -581,6 +648,15 @@ app.get('/admin', adminAuth, (req, res) => {
                         if (!confirm('Delete retry entry?')) return;
                         const resp = await fetch('/admin/retry/'+encodeURIComponent(id)+'/delete', { method: 'POST' });
                         if (!resp.ok) alert('Delete failed');
+                        load();
+                    }
+                    if (btn && btn.id === 'saveSettings'){
+                        const enabled = document.getElementById('alertsEnabled').checked ? '1' : '0';
+                        const threshold = document.getElementById('alertThreshold').value || '3';
+                        const resp = await fetch('/admin/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ALERTS_ENABLED: enabled, ALERT_THRESHOLD: threshold }) });
+                        if (!resp.ok) { alert('Failed to save settings'); return; }
+                        document.getElementById('settingsMsg').textContent = 'Saved';
+                        setTimeout(()=>{ document.getElementById('settingsMsg').textContent = ''; }, 2500);
                         load();
                     }
                 });
