@@ -43,6 +43,21 @@ class _CartPageState extends State<CartPage> {
                 ),
               ),
               const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    widget.cart.clearCart();
+                  },
+                  icon: const Icon(Icons.remove_shopping_cart),
+                  label: const Text('Clear Cart'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               Expanded(
                 child: ListView.builder(
                   itemCount: cartItems.length,
