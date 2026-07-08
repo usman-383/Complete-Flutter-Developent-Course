@@ -1,0 +1,40 @@
+# Flutter
+build/
+.dart_tool/
+.packages
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+.idea/
+*.iml
+*.ipr
+*.iws
+android/.gradle/
+ios/Pods/
+**/Generated.xcconfig
+
+# Node
+node_modules/
+npm-debug.log
+.env
+server/orders.db
+server/*.log
+
+# IDE
+.vscode/
+.DS_Store
+Thumbs.db
+
+# macOS
+*.DS_Store
+
+# Windows
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Misc
+*.lock

@@ -4,12 +4,15 @@
     "description": "Minimal server for ecommerce app (orders + Stripe intent template)",
     "main": "index.js",
     "scripts": {
-        "start": "node index.js"
+        "start": "node index.js",
+        "test-orders": "node test-send-orders.js"
     },
     "dependencies": {
         "express": "^4.18.2",
         "cors": "^2.8.5",
         "body-parser": "^1.20.2",
+        "sqlite3": "^5.1.6",
+        "nodemailer": "^6.9.4",
         "stripe": "^11.11.0",
         "dotenv": "^16.3.1"
     }

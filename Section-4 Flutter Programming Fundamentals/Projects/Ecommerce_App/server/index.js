@@ -552,6 +552,55 @@ function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g
 // check digest once per hour
 setInterval(sendDigestIfDue, 60 * 60 * 1000);
 
+// Send digest immediately (admin-triggered)
+function sendDigestNow(cb) {
+    const adminEmail = process.env.ADMIN_EMAIL || '';
+    const transporter = createTransporter();
+    if (!adminEmail || !transporter) return cb && cb(new Error('admin email or SMTP not configured'));
+
+    const threshold = parseInt(getSettingSync('ALERT_THRESHOLD') || process.env.ALERT_THRESHOLD || '3', 10);
+    db.all('SELECT * FROM email_retries WHERE attempts >= ? ORDER BY attempts DESC LIMIT 100', [threshold], (err, rows) => {
+        if (err) return cb && cb(err);
+        if (!rows || rows.length === 0) return cb && cb(null, { sent: 0 });
+
+        const lines = rows.map(r => `Order: ${r.order_id || ''} | To: ${r.recipient} | Attempts: ${r.attempts} | Last error: ${r.lastError || ''}`);
+        const text = `Digest of persistent email failures:\n\n${lines.join('\n\n')}`;
+        const html = `<div><h3>Persistent email failures</h3><ul>${rows.map(r => `<li>Order: ${r.order_id || ''} — To: ${r.recipient} — Attempts: ${r.attempts} — Last error: ${escHtml(r.lastError || '')}</li>`).join('')}</ul></div>`;
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL || process.env.SMTP_USER || '',
+            to: adminEmail,
+            subject: `Digest: ${rows.length} persistent email failures`,
+            text,
+            html,
+        };
+
+        transporter.sendMail(mailOptions, (err, info) => {
+            const logId = `${Date.now().toString(36)}-log`;
+            const sentAt = new Date().toISOString();
+            try {
+                const insert = db.prepare('INSERT INTO email_logs (id, order_id, sentAt, recipient, subject, success, info) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                insert.run(logId, '', sentAt, adminEmail, mailOptions.subject, err ? 0 : 1, err ? (err.message || String(err)) : ((info && info.response) ? info.response : 'sent'));
+                insert.finalize();
+            } catch (e) { console.error('Failed to log digest', e); }
+
+            if (!err) {
+                setSetting('LAST_DIGEST_AT', String(Date.now()));
+                return cb && cb(null, { sent: rows.length });
+            }
+            return cb && cb(err);
+        });
+    });
+}
+
+// Admin endpoint to trigger digest now
+app.post('/admin/digest/send', adminAuth, (req, res) => {
+    sendDigestNow((err, info) => {
+        if (err) return res.status(500).json({ error: err.message || String(err) });
+        return res.json({ ok: true, info });
+    });
+});
+
 // Admin: delete a retry entry
 app.post('/admin/retry/:id/delete', adminAuth, (req, res) => {
     const id = req.params.id;
@@ -630,6 +679,7 @@ app.get('/admin', adminAuth, (req, res) => {
                             <label style="margin-left:12px"><input type="checkbox" id="alertsEnabled"> Enable admin alert emails</label>
                             <label style="margin-left:12px">Threshold: <input type="number" id="alertThreshold" min="1" style="width:70px"></label>
                             <button id="saveSettings" style="margin-left:12px">Save</button>
+                            <button id="sendDigestNow" style="margin-left:12px">Send Digest Now</button>
                             <span id="settingsMsg" style="margin-left:12px;color:green"></span>
                         </div>
                         <div id="orders"></div>
@@ -699,6 +749,14 @@ app.get('/admin', adminAuth, (req, res) => {
                         if (!confirm('Delete retry entry?')) return;
                         const resp = await fetch('/admin/retry/'+encodeURIComponent(id)+'/delete', { method: 'POST' });
                         if (!resp.ok) alert('Delete failed');
+                        load();
+                    }
+                    if (btn && btn.id === 'sendDigestNow'){
+                        btn.disabled = true;
+                        const resp = await fetch('/admin/digest/send', { method: 'POST' });
+                        if (!resp.ok) { alert('Send digest failed'); btn.disabled = false; return; }
+                        alert('Digest requested');
+                        btn.disabled = false;
                         load();
                     }
                     if (btn && btn.id === 'saveSettings'){
