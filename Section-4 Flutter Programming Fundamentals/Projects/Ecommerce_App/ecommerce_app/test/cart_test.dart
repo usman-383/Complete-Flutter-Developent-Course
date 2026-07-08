@@ -17,5 +17,14 @@ void main() {
       expect(cart.isFavorite(shoe), isFalse);
       expect(cart.favorites, isEmpty);
     });
+
+    test('filteredShoes returns only matching products', () {
+      final cart = Cart();
+
+      final results = cart.filteredShoes('jordan');
+
+      expect(results, hasLength(1));
+      expect(results.first.name, 'Air Jordan');
+    });
   });
 }
