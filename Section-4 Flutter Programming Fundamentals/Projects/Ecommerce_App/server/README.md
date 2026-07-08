@@ -21,3 +21,9 @@ Run locally:
 
 Security:
 - Do NOT commit your Stripe secret key. Use environment variables in production.
+
+Email setup:
+
+- To enable order confirmation emails, add SMTP settings to your `.env` (see `.env.example`):
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SENDER_EMAIL`.
+- The server will attempt to send a plain-text confirmation email to the customer's email after the order is saved.
