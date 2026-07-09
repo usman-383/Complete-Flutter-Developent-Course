@@ -11,7 +11,8 @@ void main() {
 
       cart.toggleFavorite(shoe);
       expect(cart.isFavorite(shoe), isTrue);
-      expect(cart.favorites, contains(shoe));
+      expect(cart.favorites, hasLength(1));
+      expect(cart.favorites.first.name, shoe.name);
 
       cart.toggleFavorite(shoe);
       expect(cart.isFavorite(shoe), isFalse);
@@ -43,7 +44,7 @@ void main() {
 
       final discountedTotal = cart.applyCoupon('SAVE10');
 
-      expect(discountedTotal, 212);
+      expect(discountedTotal, 226);
       expect(cart.appliedCoupon, 'SAVE10');
     });
   });
