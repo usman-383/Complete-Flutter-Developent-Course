@@ -6,8 +6,21 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool isDarkMode = false;
+
+  void toggleTheme() {
+    setState(() {
+      isDarkMode = !isDarkMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +28,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       title: 'Flutter Demo',
-      home: const HomePage(),
+      home: HomePage(onThemeToggle: toggleTheme),
 
       theme: lightMode,
       darkTheme: darkMode,
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
     );
   }
 }
