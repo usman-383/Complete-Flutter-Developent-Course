@@ -7,14 +7,15 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      backgroundColor: Colors.deepPurple[500],
+      backgroundColor: Colors.blue[500],
       appBar: AppBar(title: const Text('Theme Demo')),
-      body: Center(child: MyBox(
-        color: Colors.deepPurple[300],
-        child: MyButton(color:Colors.deepPurple[200],onTap: (){();},
-      ),),
+      body: Center(
+        child: MyBox(
+          color: Colors.blue[300],
+          child: MyButton(color: Colors.blue[200], onTap: () {}),
+        ),
+      ),
     );
   }
 }
