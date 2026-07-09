@@ -5,23 +5,47 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:theme/Theme/theme_storage.dart';
 import 'package:theme/main.dart';
 
 void main() {
-  testWidgets('Theme toggles when the button is tapped', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Theme is remembered after restart', (WidgetTester tester) async {
+    final tempDirectory = await Directory.systemTemp.createTemp('theme_test_');
+    final storageFile = File(
+      '${tempDirectory.path}${Platform.pathSeparator}theme_mode.txt',
+    );
 
-    expect(find.text('Light Mode'), findsOneWidget);
-    expect(find.text('Tap Me'), findsOneWidget);
+    addTearDown(() async {
+      if (await tempDirectory.exists()) {
+        await tempDirectory.delete(recursive: true);
+      }
+      ThemeStorage.overridePath = null;
+    });
+
+    ThemeStorage.overridePath = storageFile.path;
+
+    await storageFile.writeAsString('dark');
+
+    await tester.pumpWidget(const MyApp());
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    expect(find.text('Dark Mode'), findsOneWidget);
 
     await tester.tap(find.byType(GestureDetector));
     await tester.pumpAndSettle();
 
-    expect(find.text('Dark Mode'), findsOneWidget);
+    expect(find.text('Light Mode'), findsOneWidget);
+
+    await tester.pumpWidget(const MyApp());
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    expect(find.text('Light Mode'), findsOneWidget);
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Pages/home_page.dart';
 import 'Theme/theme.dart';
+import 'Theme/theme_storage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,9 +17,31 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool isDarkMode = false;
 
-  void toggleTheme() {
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final savedTheme = await ThemeStorage.loadIsDarkMode();
+
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
-      isDarkMode = !isDarkMode;
+      isDarkMode = savedTheme ?? false;
+    });
+  }
+
+  Future<void> toggleTheme() async {
+    final newValue = !isDarkMode;
+
+    await ThemeStorage.saveIsDarkMode(newValue);
+
+    setState(() {
+      isDarkMode = newValue;
     });
   }
 
