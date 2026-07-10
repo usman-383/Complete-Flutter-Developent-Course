@@ -1,56 +1,153 @@
 # Complete Flutter Development Course
 
-A hands-on collection of notes, Dart exercises, and Flutter projects created while learning Flutter development.
+> A practical, project-based repository for learning Dart and Flutter, from first principles to intermediate Flutter concepts.
 
-## Course structure
+This repository contains course notes, small Dart programs, focused Flutter exercises, and complete Flutter projects. It is organized by learning section, so you can work through the material in order or open an individual project and run it independently.
 
-| Section | Topics and materials |
-| --- | --- |
-| 1. Introduction | Course overview, learning resources, mobile-development technologies, and an introduction to Flutter. |
-| 2. Setups | Development-environment setup materials. |
-| 3. Dart Programming Fundamentals | Dart examples covering variables, data types, collections, control flow, functions, object-oriented programming, generics, exceptions, and async/await. |
-| 4. Flutter Programming Fundamentals | Flutter examples for basic app structure, user input, stateless and stateful widgets, plus Todo and e-commerce projects. |
-| 5. Intermediate Level | Flutter theming examples. |
+## What you will learn
+
+- Set up a Flutter development environment
+- Write Dart programs using variables, collections, control flow, functions, and object-oriented programming
+- Understand constructors, inheritance, abstraction, generics, exception handling, and asynchronous code
+- Build Flutter interfaces with layouts, navigation, input controls, and stateful widgets
+- Create practical apps, including a to-do app and an e-commerce app
+- Implement light and dark themes with persisted theme preferences
+
+## Repository structure
+
+```text
+.
+|-- Section-1 Introduction/
+|   |-- 1 Introduction/
+|   |-- 2 Course Overview/
+|   |-- 3 Resources/
+|   |-- 4 Overview of mobile development technologies/
+|   `-- 5 Introduction Of Flutter/
+|-- Section-2 Setups/
+|-- Section-3 Dart Programming Fundamental/
+|-- Section-4 Flutter Programming Fundamentals/
+|   |-- flutter_programming_fundamentals/
+|   |-- input/
+|   |-- stateless_vs_statefull_widgets/
+|   `-- Projects/
+|       |-- todo_app/
+|       `-- Ecommerce_App/ecommerce_app/
+`-- Section-5 Intermediate Level/
+    `-- 1-Theme/theme/
+```
+
+## Course outline
+
+### Section 1 - Introduction
+
+Introduces the course, available resources, the mobile development landscape, and Flutter itself.
+
+### Section 2 - Setups
+
+Contains material for preparing a Flutter development environment.
+
+### Section 3 - Dart Programming Fundamentals
+
+Standalone Dart files that cover:
+
+- Basics: first program, variables, user input, comments, data types, keywords, operators, and constants
+- Collections and control flow: lists, sets, maps, conditions, switch statements, and loops
+- Functions and classes: functions, OOP, classes and objects, constructors, `this`, and static members
+- Object-oriented design: inheritance, access modifiers, super constructors, getters/setters, and abstraction
+- Advanced language features: exceptions, typedefs, generics, callable classes, and async/await
+
+### Section 4 - Flutter Programming Fundamentals
+
+Introduces core Flutter concepts through focused examples and projects:
+
+- Widget layouts, common Material widgets, navigation routes, lists, grids, and gesture handling
+- Form and text input with a simple to-do interface
+- Stateless versus stateful widgets through a counter example
+- Larger practice apps, including to-do and e-commerce projects
+
+### Section 5 - Intermediate Level
+
+Builds on the fundamentals with a theme-switching application that supports light and dark modes and stores the selected preference.
 
 ## Flutter projects
 
-Each project is self-contained and has its own `pubspec.yaml`.
+Every directory below is an independent Flutter application with its own `pubspec.yaml`.
 
-- `Section-4 Flutter Programming Fundamentals/flutter_programming_fundamentals`
-- `Section-4 Flutter Programming Fundamentals/input`
-- `Section-4 Flutter Programming Fundamentals/stateless_vs_statefull_widgets`
-- `Section-4 Flutter Programming Fundamentals/Projects/todo_app`
-- `Section-4 Flutter Programming Fundamentals/Projects/Ecommerce_App/ecommerce_app`
-- `Section-5 Intermediate Level/1-Theme/theme`
+| Project | Location | Demonstrates |
+| --- | --- | --- |
+| Flutter fundamentals | `Section-4 Flutter Programming Fundamentals/flutter_programming_fundamentals` | Material widgets, layouts, named routes, lists, grids, and gestures |
+| Input to-do example | `Section-4 Flutter Programming Fundamentals/input` | Text input and a simple to-do UI |
+| Counter example | `Section-4 Flutter Programming Fundamentals/stateless_vs_statefull_widgets` | Stateful widgets and counter state |
+| To-do app | `Section-4 Flutter Programming Fundamentals/Projects/todo_app` | Task management with local database initialization |
+| E-commerce app | `Section-4 Flutter Programming Fundamentals/Projects/Ecommerce_App/ecommerce_app` | Product browsing, cart management, quantity controls, coupons, and order summary |
+| Theme app | `Section-5 Intermediate Level/1-Theme/theme` | Light/dark themes and persisted theme preference |
+
+## Prerequisites
+
+Install the following before running the examples:
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install)
+- Dart SDK (included with Flutter)
+- An editor such as [Visual Studio Code](https://code.visualstudio.com/) or Android Studio with the Flutter and Dart extensions/plugins
+- An Android/iOS emulator, a connected device, Windows desktop support, or a supported browser
+
+Confirm that your environment is ready:
+
+```bash
+flutter doctor
+```
 
 ## Run a Flutter project
 
-1. Install the [Flutter SDK](https://docs.flutter.dev/get-started/install) and verify it with `flutter doctor`.
-2. In a terminal, change into the directory of one of the projects listed above.
-3. Fetch dependencies and start the app:
+1. Open a terminal at the repository root.
+2. Change to the project you want to run. For example:
+
+   ```bash
+   cd "Section-4 Flutter Programming Fundamentals/Projects/Ecommerce_App/ecommerce_app"
+   ```
+
+3. Download dependencies:
 
    ```bash
    flutter pub get
+   ```
+
+4. Start the app on a selected device:
+
+   ```bash
    flutter run
    ```
 
-## Run Dart examples
+To see the devices Flutter can target, run `flutter devices`. To launch in Chrome, use `flutter run -d chrome`.
 
-The Dart lessons are in `Section-3 Dart Programming Fundamental`. Run an example from that directory with:
+## Run a Dart lesson
+
+The Dart exercises are in `Section-3 Dart Programming Fundamental`. Change into that directory and run the desired file:
 
 ```bash
+cd "Section-3 Dart Programming Fundamental"
 dart run 1-First-Program.dart
 ```
 
-Replace the filename with the lesson you want to explore.
+Replace `1-First-Program.dart` with any lesson filename, such as `18-Loops.dart` or `34-Async-&-Await.dart`.
 
-## Requirements
+## Test a Flutter project
 
-- Flutter SDK
-- Dart SDK (included with Flutter)
-- An editor such as Visual Studio Code or Android Studio
-- An emulator, simulator, browser, or connected device for Flutter projects
+From inside a Flutter project directory, run:
 
-## Notes
+```bash
+flutter test
+```
 
-This repository is organized as learning material, so each Flutter directory is an independent project rather than part of a single application.
+## Contributing
+
+Contributions that improve explanations, examples, documentation, or projects are welcome.
+
+1. Fork the repository and create a branch.
+2. Keep changes focused on the relevant course section or project.
+3. Run `dart format .` and the relevant `flutter test` command before opening a pull request.
+4. Describe what you changed and why.
+
+## License
+
+No license has been specified for this repository. Contact the repository owner before reusing its content outside personal learning purposes.
