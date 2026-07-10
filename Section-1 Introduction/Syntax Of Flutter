@@ -1,0 +1,6 @@
+//Flutter syntax
+
+//Main Function
+void main(){
+  print("Hello world"):
+}
