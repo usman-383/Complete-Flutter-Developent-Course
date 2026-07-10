@@ -5,7 +5,7 @@ import 'package:flutter_programming_fundamentals/Pages/setting_page.dart';
 // import 'package:flutter_programming_fundamentals/Pages/second_page.dart';
 
 class FirstPage extends StatefulWidget {
-  FirstPage({super.key});
+  const FirstPage({super.key});
 
   @override
   State<FirstPage> createState() => _FirstPageState();
